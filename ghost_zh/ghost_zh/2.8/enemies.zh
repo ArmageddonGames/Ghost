@@ -1,0 +1,1841 @@
+// enemies.zh
+// Version 2.5.2
+//****************************************************************************************************
+
+//****************************************************************************************************
+//Enemies
+//****************************************************************************************************
+
+// Wait time between movement
+const int POPO_MIN_WAIT_TIME = 90;
+const int POPO_MAX_WAIT_TIME = 240;
+
+// Number of jumps before stopping
+const int POPO_MIN_JUMPS = 8;
+const int POPO_MAX_JUMPS = 12;
+
+ffc script Popo
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        int numJumps;
+        int waitTime;
+        float angle;
+        float step;
+        int homing;
+        
+        // Initialize
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_NORMAL);
+        step=ghost->Step/100;
+        homing=ghost->Homing;
+        
+        while(true)
+        {
+            // Wait before moving; slow animation for most of that time
+            waitTime=Rand(POPO_MIN_WAIT_TIME, POPO_MAX_WAIT_TIME);
+            ghost->ASpeed*=2;
+            for(int i=0; i<waitTime; i++)
+            {
+                if(i==Floor(2*waitTime/3))
+                    ghost->ASpeed/=2;
+                Ghost_Waitframe(this, ghost, true, true);
+            }
+            
+            // Pick angle - aim for Link based on homing factor
+            if(Rand(256)<homing)
+                angle=ArcTan(Link->X-Ghost_X, Link->Y-Ghost_Y)*57.2958;
+            else
+                angle=Rand(360);
+            
+            // Jump across the ground
+            numJumps=Rand(POPO_MIN_JUMPS, POPO_MAX_JUMPS);
+            
+            for(int i=0; i<numJumps; i++)
+            {
+                Ghost_Jump=0.5;
+                do
+                {
+                    Ghost_MoveAtAngle(angle, step, 3);
+                    Ghost_Waitframe(this, ghost, true, true);
+                } while(Ghost_Z>0);
+                
+                Ghost_Waitframes(this, ghost, true, true, 12);
+            }
+        }
+    }
+}
+
+const int ARMOS_JUMP_HEIGHT = 1.5;
+
+// npc->Attribute[] indices
+const int ARMOS_ATTR_START_SOUND = 0;
+const int ARMOS_ATTR_JUMP_SOUND = 1;
+
+ffc script Armos_LttP
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        float step;
+        int jumpSound;
+        
+        // Initialize - come to life and set the combo
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_NORMAL);
+        Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+        Ghost_SetFlag(GHF_FAKE_Z);
+        Game->PlaySound(ghost->Attributes[ARMOS_ATTR_START_SOUND]);
+        SpawnAnimation(this, ghost);
+        
+        step=ghost->Step/100;
+        jumpSound=ghost->Attributes[ARMOS_ATTR_JUMP_SOUND];
+        
+        // Just jump toward Link forever
+        while(true)
+        {
+            if(Ghost_Z==0 && Ghost_Jump<=0)
+            {
+                Ghost_Jump=ARMOS_JUMP_HEIGHT;
+                Game->PlaySound(jumpSound);
+            }
+            
+            Ghost_MoveTowardLink(step, 3);
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+    
+    // A modified version of Ghost_SpawnAnimationFlicker(). This removes the
+    // Armos combo near the end of the animation.
+    void SpawnAnimation(ffc this, npc ghost)
+    {
+        int combo=this->Data;
+        bool collDet=ghost->CollDetection;
+        int xOffset=ghost->DrawXOffset;
+        
+        Ghost_SetPosition(this, ghost);
+        ghost->CollDetection=false;
+        
+        // Alternate drawing offscreen and in place for 64 frames
+        for(int i=0; i<32; i++)
+        {
+            this->Data=0;
+            ghost->DrawXOffset=32768;
+            Ghost_SetPosition(this, ghost);
+            Ghost_WaitframeLight(this, ghost);
+            
+            this->Data=combo;
+            ghost->DrawXOffset=xOffset;
+            Ghost_SetPosition(this, ghost);
+            Ghost_WaitframeLight(this, ghost);
+            
+            // The combo has to be removed shortly before the animation
+            // finishes; otherwise, it's possible to spawn two of them.
+            if(i==29)
+            {
+                Screen->ComboD[ComboAt(this->X, this->Y)]=Screen->UnderCombo;
+                Screen->ComboC[ComboAt(this->X, this->Y)]=Screen->UnderCSet;
+            }
+        }
+        
+        this->Data=combo;
+        ghost->CollDetection=collDet;
+        ghost->DrawXOffset=xOffset;
+    }
+}
+
+
+
+
+
+// Time before coming to life
+const int AK_INITIAL_WAIT_TIME = 180;
+const int AK_RUMBLE_TIME = 60;
+
+// First phase movement
+const int AK_PART_1_WAIT_TIME = 150;
+const int AK_PART_1_TOTAL_CIRCLE_TIME = 510;
+const int AK_PART_1_REDUCE_RADIUS_TIME = 300;
+const int AK_PART_1_EXPAND_RADIUS_TIME = 390;
+const int AK_PART_1_STEP = 1;
+const int AK_PART_1_ROTATE_SPEED = 1;
+
+// Second phase movement
+const int AK_PART_2_WAIT_TIME = 30;
+const int AK_PART_2_STEP = 3.5;
+const int AK_PART_2_RISE_DIVISOR = 4;
+const int AK_PART_2_FALL_STEP = 6;
+
+// ffc->Misc[] indices
+const int AK_IDX_LAST_ONE = 0;
+const int AK_IDX_PLAY_SOUND = 1;
+const int AK_IDX_DYING = 2;
+
+// npc->Attributes[] indices
+const int AK_ATTR_NUM_KNIGHTS = 0;
+const int AK_ATTR_SECOND_CSET = 1;
+const int AK_ATTR_SFX_STOMP = 2;
+const int AK_ATTR_SFX_JUMP = 3;
+const int AK_ATTR_SFX_RUMBLE = 4;
+const int AK_ATTR_EXPLODE = 5;
+
+ffc script ArmosKnights
+{
+    void run(int enemyID, int knightID, int numKnights, int rowX)
+    {
+        // The placed enemy is a dummy that acts as a supervisor;
+        // it'll set up the rest of the FFCs and give them nonzero knightIDs
+        if(knightID==0)
+            SupervisorRun(this, enemyID);
+        else
+            KnightRun(this, enemyID, knightID-1, numKnights, rowX);
+    }
+    
+    // Supervisor mode ------------------------
+    
+    void SupervisorRun(ffc this, int enemyID)
+    {
+        npc ghost;
+        int combo;
+        int cset;
+        int numKnights;
+        int numFFCs;
+        int ffcID;
+        int numAlive;
+        ffc knightFFC[6];
+        int startX[6]; // Starting positions
+        int startY[6];
+        int rowX[6]; // Initial positions when jumping downward in a row
+        bool alive[6]; // Whether each knight is still alive
+        bool playSound;
+        int i;
+        
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        ghost->CollDetection=false;
+        ghost->SFX=0;
+        
+        combo=Ghost_Data;
+        cset=Ghost_CSet;
+        this->Data=0;
+        
+        numKnights=Ghost_GetAttribute(ghost, AK_ATTR_NUM_KNIGHTS, 1, 1, 6);
+        
+        // Get FFCs for knights
+        numFFCs=0;
+        ffcID=0;
+        
+        while(numFFCs<numKnights)
+        {
+            ffcID=FindUnusedFFC(ffcID);
+            
+            if(ffcID==0)
+                break;
+            
+            knightFFC[numFFCs]=Screen->LoadFFC(ffcID);
+            numFFCs++;
+        }
+        
+        // Reduce the number of knights if too few FFCs were available
+        numKnights=Min(numKnights, numFFCs);
+        
+        // Find where the knights go based on how many there are
+        GetStartingPositions(numKnights, startX, startY);
+        GetRowPositions(numKnights, rowX);
+        
+        // Set up the FFCs; no enemies or scripts yet
+        for(i=0; i<numKnights; i++)
+        {
+            knightFFC[i]->Data=combo;
+            knightFFC[i]->CSet=cset;
+            knightFFC[i]->TileWidth=2;
+            knightFFC[i]->TileHeight=2;
+            knightFFC[i]->X=startX[i];
+            knightFFC[i]->Y=startY[i];
+            knightFFC[i]->Flags[FFCF_OVERLAY]=true;
+        }
+        
+        // Let the FFCs sit there a moment, then rumble
+        
+        Waitframes(AK_INITIAL_WAIT_TIME);
+        
+        Game->PlaySound(ghost->Attributes[AK_ATTR_SFX_RUMBLE]);
+        for(i=0; i<AK_RUMBLE_TIME; i++)
+        {
+            for(int j=0; j<numKnights; j++)
+                knightFFC[j]->X=startX[j]+Rand(3)-1; // Starting position +/- 1
+            Waitframe();
+        }
+        
+        // Set up the knights' scripts
+        numAlive=numKnights;
+        for(i=0; i<numKnights; i++)
+        {
+            knightFFC[i]->Script=this->Script;
+            knightFFC[i]->InitD[0]=enemyID;
+            knightFFC[i]->InitD[1]=i+1;
+            knightFFC[i]->InitD[2]=numKnights;
+            knightFFC[i]->InitD[3]=rowX[i];
+            alive[i]=true;
+        }
+        
+        // The knights will move on their own; just watch to see when they die
+        while(numAlive>1)
+        {
+            Waitframe();
+            for(i=0; i<numKnights; i++)
+            {
+                if(!alive[i])
+                    continue;
+                
+                // If a knight is dying, don't count it as dead unless there's at least one other;
+                // if they all died at once here, the second phase of the fight wouldn't happen
+                if(knightFFC[i]->Misc[AK_IDX_DYING]!=0 && numAlive>1)
+                {
+                    alive[i]=false;
+                    numAlive--;
+                }
+                // Check if a landing sound should be played;
+                // It's the supervisor that does this so the sound only plays once per jump
+                else if(knightFFC[i]->Misc[AK_IDX_PLAY_SOUND]==1)
+                    playSound=true;
+            }
+            
+            if(playSound)
+            {
+                Game->PlaySound(ghost->Attributes[AK_ATTR_SFX_STOMP]);
+                playSound=false;
+            }
+        }
+        
+        // Only one is left; tell it to switch behavior
+        for(i=0; i<numKnights; i++)
+        {
+            if(alive[i])
+            {
+                knightFFC[i]->Misc[AK_IDX_LAST_ONE]=1;
+                break;
+            }
+        }
+        
+        // Then just wait for it to die
+        knightFFC[i]->Misc[AK_IDX_DYING]=0;
+        while(knightFFC[i]->Misc[AK_IDX_DYING]==0)
+            Waitframe();
+        
+        // And kill the supervisor
+        ghost->X=1024;
+        ghost->Y=1024;
+        ghost->ItemSet=0;
+        this->Data=0;
+        Quit();
+    }
+    
+    // Determine the initial position of each knight based on the total number
+    void GetStartingPositions(int numKnights, int startX, int startY)
+    {
+        if(numKnights==1)
+        {
+            startX[0]=112;
+            startY[0]=72;
+        }
+        else if(numKnights==2)
+        {
+            startX[0]=64;
+            startY[0]=72;
+            
+            startX[1]=160;
+            startY[1]=72;
+        }
+        else if(numKnights==3)
+        {
+            startX[0]=112;
+            startY[0]=48;
+            
+            startX[1]=160;
+            startY[1]=96;
+            
+            startX[2]=64;
+            startY[2]=96;
+        }
+        else if(numKnights==4)
+        {
+            startX[0]=64;
+            startY[0]=48;
+            
+            startX[1]=160;
+            startY[1]=48;
+            
+            startX[2]=160;
+            startY[2]=96;
+            
+            startX[3]=64;
+            startY[3]=96;
+        }
+        else if(numKnights==5)
+        {
+            startX[0]=112;
+            startY[0]=48;
+            
+            startX[1]=160;
+            startY[1]=48;
+            
+            startX[2]=140;
+            startY[2]=96;
+            
+            startX[3]=80;
+            startY[3]=96;
+            
+            startX[4]=64;
+            startY[4]=48;
+        }
+        else // 6
+        {
+            startX[0]=112;
+            startY[0]=48;
+            
+            startX[1]=160;
+            startY[1]=48;
+            
+            startX[2]=160;
+            startY[2]=96;
+            
+            startX[3]=112;
+            startY[3]=96;
+            
+            startX[4]=64;
+            startY[4]=96;
+            
+            startX[5]=64;
+            startY[5]=48;
+        }
+    }
+    
+    // Determine each knight's X position when jumping in a row
+    void GetRowPositions(int numKnights, int rowX)
+    {
+        // If there's only one, this won't be used, anyway
+        if(numKnights==2)
+        {
+            rowX[0]=64;
+            rowX[1]=160;
+        }
+        else if(numKnights==3)
+        {
+            rowX[0]=56;
+            rowX[1]=112;
+            rowX[2]=168;
+        }
+        else if(numKnights==4)
+        {
+            rowX[0]=40;
+            rowX[1]=88;
+            rowX[2]=136;
+            rowX[3]=184;
+        }
+        else if(numKnights==5)
+        {
+            rowX[0]=32;
+            rowX[1]=72;
+            rowX[2]=112;
+            rowX[3]=152;
+            rowX[4]=192;
+        }
+        else // 6
+        {
+            rowX[0]=32;
+            rowX[1]=64;
+            rowX[2]=96;
+            rowX[3]=128;
+            rowX[4]=160;
+            rowX[5]=192;
+        }
+    }
+    
+    // Knight mode ------------------------
+    
+    void KnightRun(ffc this, int enemyID, int position, int numKnights, int rowX)
+    {
+        npc ghost;
+        int maxHP;
+        int cset2;
+        float radius;
+        float targetAngle;
+        float angleStep;
+        float targetX;
+        float targetY;
+        bool endPart1;
+        int i;
+        
+        ghost=Ghost_InitCreate(this, enemyID);
+        Ghost_SetFlag(GHF_FAKE_Z);
+        Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+        Ghost_SetFlag(GHF_REDUCED_KNOCKBACK);
+        maxHP=Ghost_HP;
+        
+        cset2=ghost->Attributes[AK_ATTR_SECOND_CSET];
+        
+        // First stage - other knights still alive
+        endPart1=false;
+        angleStep=AK_PART_1_ROTATE_SPEED;
+        radius=40;
+        
+        while(true)
+        {
+            // Move into position and hold it briefly
+            targetAngle=270+(position/numKnights)*360;
+            targetX=112+radius*Cos(targetAngle);
+            targetY=72+radius*Sin(targetAngle);
+            
+            for(i=0; i<AK_PART_1_WAIT_TIME && !endPart1; i++)
+                endPart1=AKPart1Waitframe(this, ghost, targetX, targetY);
+            
+            if(endPart1)
+                break;
+            
+            // Jump in a circle for a while
+            for(i=0; i<AK_PART_1_TOTAL_CIRCLE_TIME && !endPart1; i++)
+            {
+                // Change radius at certain points
+                if(i==AK_PART_1_REDUCE_RADIUS_TIME)
+                    radius=24;
+                else if(i==AK_PART_1_EXPAND_RADIUS_TIME)
+                    radius=40;
+                
+                // Rotate until the radius has been decreased and restored
+                if(i<=AK_PART_1_EXPAND_RADIUS_TIME)
+                {
+                    targetAngle+=angleStep;
+                    targetX=112+radius*Cos(targetAngle);
+                    targetY=72+radius*Sin(targetAngle);
+                }
+                
+                endPart1=AKPart1Waitframe(this, ghost, targetX, targetY);
+            }
+            
+            if(endPart1)
+                break;
+            
+            // Line up and jump down the screen
+            targetX=rowX;
+            targetY=16;
+            for(i=0; i<AK_PART_1_WAIT_TIME && !endPart1; i++)
+                endPart1=AKPart1Waitframe(this, ghost, targetX, targetY);
+            
+            if(endPart1)
+                break;
+            
+            targetY=112;
+            
+            // Moving 112-16=96 pixels, so wait exactly long enough for that
+            for(i=96/AK_PART_1_STEP; i>0 && !endPart1; i--)
+                endPart1=AKPart1Waitframe(this, ghost, targetX, targetY);
+            
+            if(endPart1)
+                break;
+            
+            // Rotate the opposite direction next time
+            angleStep*=-1;
+        }
+        
+        // Part 1's ended, so this is the last knight; change color, restore HP, change behavior
+        Ghost_CSet=cset2;
+        Ghost_HP=maxHP;
+        
+        // Finish falling...
+        while(Ghost_Z>0)
+            AKPart2Waitframe(this, ghost, Ghost_X, Ghost_Y);
+        
+        // Change Z handling...
+        Ghost_SetFlag(GHF_NO_FALL);
+        Ghost_UnsetFlag(GHF_FAKE_Z);
+        
+        while(true)
+        {
+            // Move to directly above Link
+            targetX=Link->X-8;
+            targetY=Link->Y-16;
+            
+            Game->PlaySound(ghost->Attributes[AK_ATTR_SFX_JUMP]);
+            
+            while(!(Ghost_X==targetX && Ghost_Y==targetY))
+                AKPart2Waitframe(this, ghost, targetX, targetY);
+            
+            // Hold it for a moment
+            for(i=0; i<AK_PART_2_WAIT_TIME; i++)
+                AKPart2Waitframe(this, ghost, targetX, targetY);
+            
+            // Fall
+            while(Ghost_Z>0)
+            {
+                Ghost_Z-=AK_PART_2_FALL_STEP;
+                AKPart2Waitframe(this, ghost, targetX, targetY);
+            }
+            
+            Game->PlaySound(ghost->Attributes[AK_ATTR_SFX_STOMP]);
+            
+            // And wait for a moment before repeating
+            for(i=0; i<AK_PART_2_WAIT_TIME; i++)
+                AKPart2Waitframe(this, ghost, targetX, targetY);
+        }
+    }
+    
+    // Waitframe used in the first phase of the fight. Returns true if this
+    // is the last knight and it's time to start the next phase.
+    bool AKPart1Waitframe(ffc this, npc ghost, float targetX, float targetY)
+    {
+        // Move toward where the knight's supposed to be
+        if(Distance(Ghost_X, Ghost_Y, targetX, targetY)<AK_PART_1_STEP)
+        {
+            Ghost_X=targetX;
+            Ghost_Y=targetY;
+        }
+        else
+        {
+            float angle=ArcTan(targetX-Ghost_X, targetY-Ghost_Y)*57.2958;
+            Ghost_X+=AK_PART_1_STEP*Cos(angle);
+            Ghost_Y+=AK_PART_1_STEP*Sin(angle);
+        }
+    
+        // If on the ground, jump and tell the supervisor to play the bounce sound
+        if(Ghost_Z==0)
+        {
+            Ghost_Jump=2;
+            this->Misc[AK_IDX_PLAY_SOUND]=1;
+        }
+        else if(this->Misc[AK_IDX_PLAY_SOUND]==1)
+            this->Misc[AK_IDX_PLAY_SOUND]=0;
+        
+        // Don't automatically clear and quit on death; if the last two died
+        // at the same time, the second phase of the battle wouldn't happen
+        if(!Ghost_Waitframe(this, ghost, false, false))
+        {
+            // Wait a frame to let the supervisor check
+            this->Misc[AK_IDX_DYING]=1;
+            Ghost_HP=1;
+            Ghost_Waitframe(this, ghost, true, true);
+            
+            // If this isn't the last knight, it can die now
+            if(this->Misc[AK_IDX_LAST_ONE]==0)
+            {
+                Ghost_HP=0;
+                Ghost_Waitframe(this, ghost, true, true);
+            }
+            else
+                return true;
+        }
+        
+        return this->Misc[AK_IDX_LAST_ONE]!=0;
+    }
+    
+    // Waitframe used in the second phase of the fight.
+    void AKPart2Waitframe(ffc this, npc ghost, float targetX, float targetY)
+    {
+        if(Ghost_X!=targetX || Ghost_Y!=targetY)
+        {
+            float dist=Distance(Ghost_X, Ghost_Y, targetX, targetY);
+            
+            if(dist<AK_PART_2_STEP)
+            {
+                Ghost_X=targetX;
+                Ghost_Y=targetY;
+                Ghost_Z+=Sqrt(dist)/AK_PART_2_RISE_DIVISOR;
+            }
+            else
+            {
+                float angle=ArcTan(targetX-Ghost_X, targetY-Ghost_Y)*57.2958;
+                Ghost_X+=AK_PART_2_STEP*Cos(angle);
+                Ghost_Y+=AK_PART_2_STEP*Sin(angle);
+                Ghost_Z+=Sqrt(dist)/AK_PART_2_RISE_DIVISOR;
+            }
+        }
+        
+        if(!Ghost_Waitframe(this, ghost, ghost->Attributes[AK_ATTR_EXPLODE]==0,
+                            ghost->Attributes[AK_ATTR_EXPLODE]==0))
+        {
+            this->Misc[AK_IDX_DYING]=1;
+            Ghost_DeathAnimation(this, ghost, ghost->Attributes[AK_ATTR_EXPLODE]);
+            Quit();
+        }
+    }
+}
+
+
+
+
+
+
+
+
+// How long to wait before firing again
+const int GOR_FIRE_WAIT_TIME=30;
+
+// Direction reversal settings
+const int GOR_REVERSE_UD=1;
+const int GOR_REVERSE_LR=2;
+const int GOR_REVERSE_ALL=3;
+
+// ffc->Misc[] index
+const int GOR_IDX_FIRE_TIMER=0;
+
+// npc->Attributes[] indices
+const int GOR_ATTR_REVERSE=0;
+const int GOR_ATTR_SPRITE_OVERRIDE=1;
+const int GOR_ATTR_SOUND_OVERRIDE=2;
+const int GOR_ATTR_IGNORE_CHARGE=3;
+const int GOR_ATTR_COMBO=10;
+
+ffc script Goriya_LttP
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        int standCombo;
+        int walkCombo;
+        
+        bool reverseLR;
+        bool reverseUD;
+        float step;
+        bool ignoreCharge;
+        
+        int prevLinkX;
+        int prevLinkY;
+        float stepX;
+        float stepY;
+        
+        int xDiff;
+        int yDiff;
+        
+        bool fire;
+        int weapon;
+        int damage;
+        int sprite;
+        int sound;
+        
+        // Initialize
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_NORMAL);
+        Ghost_SetFlag(GHF_4WAY);
+        Ghost_SpawnAnimationPuff(this, ghost);
+        
+        // Combos
+        standCombo=ghost->Attributes[GOR_ATTR_COMBO];
+        walkCombo=standCombo+4;
+        
+        // Weapon
+        weapon=WeaponTypeToID(ghost->Weapon);
+        damage=ghost->WeaponDamage;
+        
+        // Weapon sprite override
+        if(ghost->Attributes[GOR_ATTR_SPRITE_OVERRIDE]>0)
+            sprite=ghost->Attributes[GOR_ATTR_SPRITE_OVERRIDE];
+        else
+            sprite=GetDefaultEWeaponSprite(weapon);
+        
+        // Weapon sound override
+        if(ghost->Attributes[GOR_ATTR_SOUND_OVERRIDE]>0)
+            sound=ghost->Attributes[GOR_ATTR_SOUND_OVERRIDE];
+        else
+            sound=GetDefaultEWeaponSound(weapon);
+        
+        // Movement modifiers
+        reverseUD=ghost->Attributes[GOR_ATTR_REVERSE]==GOR_REVERSE_UD ||
+                  ghost->Attributes[GOR_ATTR_REVERSE]==GOR_REVERSE_ALL;
+        reverseLR=ghost->Attributes[GOR_ATTR_REVERSE]==GOR_REVERSE_LR ||
+                  ghost->Attributes[GOR_ATTR_REVERSE]==GOR_REVERSE_ALL;
+        step=ghost->Step/150;
+        if(step==0)
+            step=1;
+        
+        ignoreCharge=ghost->Attributes[GOR_ATTR_IGNORE_CHARGE]!=0;
+        
+        // Link's previous position
+        prevLinkX=Link->X;
+        prevLinkY=Link->Y;
+        
+        while(true)
+        {
+            // Link isn't walking; match his direction, but don't do anything else
+            Ghost_Data=standCombo;
+            while(!(Link->Action==LA_WALKING || (Link->Action==LA_CHARGING && !ignoreCharge)) ||
+                  (Link->X==prevLinkX && Link->Y==prevLinkY))
+            {
+                if(reverseLR && (Link->Dir==DIR_LEFT || Link->Dir==DIR_RIGHT))
+                    Ghost_Dir=OppositeDir(Link->Dir);
+                else if(reverseUD && (Link->Dir==DIR_UP || Link->Dir==DIR_DOWN))
+                    Ghost_Dir=OppositeDir(Link->Dir);
+                else
+                    Ghost_Dir=Link->Dir;
+                
+                prevLinkX=Link->X;
+                prevLinkY=Link->Y;
+                
+                GorWaitframe(this, ghost);
+                if(Ghost_WasFrozen())
+                {
+                    prevLinkX=Link->X;
+                    prevLinkY=Link->Y;
+                }
+            }
+            
+            // Link is walking; match his movement
+            Ghost_Data=walkCombo;
+            
+            while((Link->Action==LA_WALKING || (Link->Action==LA_CHARGING && !ignoreCharge)) &&
+                  (Link->X!=prevLinkX || Link->Y!=prevLinkY))
+            {
+                // Figure out where to move
+                stepX=Link->X-prevLinkX;
+                stepY=Link->Y-prevLinkY;
+                
+                // Adjust speed
+                stepX*=step;
+                stepY*=step;
+                
+                // Reversed?
+                if(reverseLR)
+                    stepX*=-1;
+                if(reverseUD)
+                    stepY*=-1;
+                
+                // Face the right way
+                if(reverseLR && (Link->Dir==DIR_LEFT || Link->Dir==DIR_RIGHT))
+                    Ghost_ForceDir(OppositeDir(Link->Dir));
+                else if(reverseUD && (Link->Dir==DIR_UP || Link->Dir==DIR_DOWN))
+                    Ghost_ForceDir(OppositeDir(Link->Dir));
+                else
+                    Ghost_ForceDir(Link->Dir);
+                
+                Ghost_MoveXY(stepX, stepY, 2);
+                
+                // Fire if facing Link and a weapon is set
+                if(weapon>0 && this->Misc[GOR_IDX_FIRE_TIMER]==0)
+                {
+                    xDiff=Link->X-Ghost_X;
+                    yDiff=Link->Y-Ghost_Y;
+                    fire=false;
+                    
+                    if(Ghost_Dir==DIR_UP)
+                    {
+                        if(yDiff<-16 && Abs(xDiff)<16)
+                            fire=true;
+                    }
+                    else if(Ghost_Dir==DIR_DOWN)
+                    {
+                        if(yDiff>16 && Abs(xDiff)<16)
+                           fire=true;
+                    }
+                    else if(Ghost_Dir==DIR_LEFT)
+                    {
+                        if(xDiff<-16 && Abs(yDiff)<16)
+                            fire=true;
+                    }
+                    else // Right
+                    {
+                        if(xDiff>16 && Abs(yDiff)<16)
+                            fire=true;
+                    }
+                    
+                    if(fire)
+                    {
+                        FireNonAngularEWeapon(ghost->Weapon, Ghost_X, Ghost_Y,
+                                              Ghost_Dir, 300, damage, sprite,
+                                              sound, EWF_ROTATE);
+                        this->Misc[GOR_IDX_FIRE_TIMER]=GOR_FIRE_WAIT_TIME;
+                    }
+                }
+                
+                prevLinkX=Link->X;
+                prevLinkY=Link->Y;
+                
+                GorWaitframe(this, ghost);
+                if(Ghost_WasFrozen())
+                {
+                    prevLinkX=Link->X;
+                    prevLinkY=Link->Y;
+                }
+            }
+        }
+    }
+    
+    void GorWaitframe(ffc this, npc ghost)
+    {
+        if(this->Misc[GOR_IDX_FIRE_TIMER]>0)
+            this->Misc[GOR_IDX_FIRE_TIMER]--;
+        
+        Ghost_Waitframe(this, ghost, true, true);
+    }
+}
+
+
+
+// npc->Attributes[] indices
+const int WB_ATTR_TILE_WIDTH = 2;
+const int WB_ATTR_TILE_HEIGHT = 3;
+const int WB_ATTR_IGNORE_WATER = 4;
+const int WB_ATTR_IGNORE_PITS = 5;
+
+ffc script WallBouncer
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        int flags;
+        int angle;
+        float step;
+        float xStep;
+        float yStep;
+        
+        // Initialize
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_NO_FALL);
+        Ghost_TileWidth=Ghost_GetAttribute(ghost, WB_ATTR_TILE_WIDTH, 1, 1, 4);
+        Ghost_TileHeight=Ghost_GetAttribute(ghost, WB_ATTR_TILE_HEIGHT, 1, 1, 4);
+        Ghost_SpawnAnimationPuff(this, ghost);
+        
+        // Set flags
+        flags=GHF_STUN|GHF_CLOCK;
+        if(ghost->Attributes[WB_ATTR_IGNORE_WATER]>0)
+            flags|=GHF_IGNORE_WATER;
+        if(ghost->Attributes[WB_ATTR_IGNORE_PITS]>0)
+            flags|=GHF_IGNORE_PITS;
+        Ghost_SetFlags(flags);
+        
+        // Get initial movement
+        angle=45+90*Rand(4);
+        step=ghost->Step/100;
+        ghost->Step=0; // In case it's a walker
+        
+        xStep=step*Cos(angle);
+        yStep=step*Sin(angle);
+        
+        while(true)
+        {
+            // Bounce
+            if(xStep<0)
+            {
+                if(!Ghost_CanMove(DIR_LEFT, -xStep, 3))
+                   xStep*=-1;
+            }
+            else
+            {
+                if(!Ghost_CanMove(DIR_RIGHT, xStep, 3))
+                   xStep*=-1;
+            }
+            
+            if(yStep<0)
+            {
+                if(!Ghost_CanMove(DIR_UP, -yStep, 3))
+                   yStep*=-1;
+            }
+            else
+            {
+                if(!Ghost_CanMove(DIR_DOWN, yStep, 3))
+                   yStep*=-1;
+            }
+            
+            // And move
+            Ghost_MoveXY(xStep, yStep, 3);
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+}
+
+
+
+
+
+
+
+const int CHASER_ACCELERATION = 0.05;
+const int CHASER_DEFAULT_STEP = 100;
+
+// npc->Misc[] indices
+const int CHASER_ATTR_IGNORE_WATER = 0;
+const int CHASER_ATTR_IGNORE_PITS = 1;
+const int CHASER_ATTR_WIDTH = 2;
+const int CHASER_ATTR_HEIGHT = 3;
+const int CHASER_ATTR_START_SOUND = 4;
+const int CHASER_ATTR_STOP_SOUND = 5;
+const int CHASER_ATTR_MOVE_SOUND = 6;
+const int CHASER_ATTR_MOVE_SOUND_LOOP_TIME = 7;
+
+ffc script Chaser
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        int inactiveCombo;
+        int direction;
+        float speed=0;
+        float maxSpeed;
+        int flags=0;
+        int startSound;
+        int stopSound;
+        int moveSound;
+        int moveSoundLoopTime;
+        
+        // Initialize
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_TileWidth=Ghost_GetAttribute(ghost, CHASER_ATTR_WIDTH, 1, 1, 4);
+        Ghost_TileHeight=Ghost_GetAttribute(ghost, CHASER_ATTR_HEIGHT, 1, 1, 4);
+        Ghost_SpawnAnimationPuff(this, ghost);
+        
+        // Read settings
+        if(ghost->Attributes[CHASER_ATTR_IGNORE_WATER]>0)
+            flags|=GHF_IGNORE_WATER;
+        if(ghost->Attributes[CHASER_ATTR_IGNORE_PITS]>0)
+            flags|=GHF_IGNORE_PITS;
+        Ghost_SetFlags(flags);
+        
+        maxSpeed=ghost->Step/100;
+        if(maxSpeed==0)
+            maxSpeed=CHASER_DEFAULT_STEP/100;
+        
+        inactiveCombo=Ghost_Data;
+        startSound=ghost->Attributes[CHASER_ATTR_START_SOUND];
+        stopSound=ghost->Attributes[CHASER_ATTR_STOP_SOUND];
+        moveSound=ghost->Attributes[CHASER_ATTR_MOVE_SOUND];
+        moveSoundLoopTime=ghost->Attributes[CHASER_ATTR_MOVE_SOUND_LOOP_TIME];
+        
+        while(true)
+        {
+            // Wait for Link to come into range
+            while(true)
+            {
+                // Link is aligned vertically
+                if(Link->X>Ghost_X-14 && Link->X<Ghost_X+16*Ghost_TileWidth-2)
+                {
+                    // Move up or down?
+                    if(Link->Y<Ghost_Y && Ghost_CanMove(DIR_UP, 1, 0))
+                    {
+                        direction=DIR_UP;
+                        break;
+                    }
+                    else if(Link->Y>Ghost_Y && Ghost_CanMove(DIR_DOWN, 1, 0))
+                    {
+                        direction=DIR_DOWN;
+                        break;
+                    }
+                    else
+                        Ghost_Waitframe(this, ghost, true, true);
+                }
+                // Link is aligned horizontally
+                else if(Link->Y>Ghost_Y-14 && Link->Y<Ghost_Y+16*Ghost_TileHeight-2)
+                {                    
+                    // Move left or right?
+                    if(Link->X<Ghost_X && Ghost_CanMove(DIR_LEFT, 1, 0))
+                    {
+                        direction=DIR_LEFT;
+                        break;
+                    }
+                    else if(Link->X>Ghost_X && Ghost_CanMove(DIR_RIGHT, 1, 0))
+                    {
+                        direction=DIR_RIGHT;
+                        break;
+                    }
+                    else
+                        Ghost_Waitframe(this, ghost, true, true);
+                }
+                else
+                    Ghost_Waitframe(this, ghost, true, true);
+            }
+            
+            // Start moving
+            Ghost_Data=inactiveCombo+1;
+            Game->PlaySound(startSound);
+            
+            // Start i at 1 so the sound doesn't play right away
+            for(int i=1; Ghost_X%8!=0 || Ghost_Y%8!=0 || Ghost_CanMove(direction, 1, 0); i++)
+            {
+                // Play the sound, if it's time
+                if(moveSoundLoopTime>0)
+                {
+                    if(i%moveSoundLoopTime==0)
+                        Game->PlaySound(moveSound);
+                }
+                
+                // Switch combos at certain points
+                if(i==10 || i==40)
+                    Ghost_Data++;
+                
+                // Speed up and move
+                speed=Min(speed+CHASER_ACCELERATION, maxSpeed);
+                Ghost_Move(direction, speed, 0);
+                Ghost_Waitframe(this, ghost, true, true);
+            }
+            
+            // Stop
+            speed=0;
+            Game->PlaySound(stopSound);
+            Ghost_Data=inactiveCombo;
+        }
+    }
+}
+
+
+
+
+
+
+
+
+const int SPUME_SAFE_DIST = 48; // How far Link has to be before it'll come out
+const int SPUME_FIRE_RATE_MIN = 60; // Minimum time between shots
+const int SPUME_FIRE_RATE_MAX = 150; // Maximum time between shots
+const int SPUME_PROJ_STEP = 200; // EWeapon speed
+const int SPUME_CHARGE_TIME = 30; // Time to charge before firing
+const int SPUME_FIRE_TIME = 15; // Time to remain in firing pose
+const int SPUME_EWEAPON = 31; // Type of weapon to fire (EW constant)
+const int SPUME_IC_SHIELD = 12; // Shield item class; you'll probably need to
+                                // change this if using a GB-style shield
+
+// npc->Attributes[] indices
+const int SPUME_ATTR_SPAWN_TYPE = 0;
+const int SPUME_ATTR_SPAWN_FLAG = 1;
+const int SPUME_ATTR_SHIELD_LEVEL = 2;
+const int SPUME_ATTR_PROJ_ARC = 3;
+const int SPUME_ATTR_PROJ_SPRITE = 4;
+const int SPUME_ATTR_PROJ_TRANS = 5;
+const int SPUME_ATTR_CHARGE_SOUND = 6;
+const int SPUME_ATTR_PROJ_SOUND = 7;
+const int SPUME_ATTR_EMERGE_SOUND = 8;
+const int SPUME_ATTR_SUBMERGE_SOUND = 9;
+
+// ffc->Misc[] index
+const int SPUME_IDX_BASE_COMBO = 0;
+
+// Combo offsets
+const int SPUME_COMBO_SUBMERGED = 0;
+const int SPUME_COMBO_EMERGING = 4;
+const int SPUME_COMBO_EMERGED = 8;
+const int SPUME_COMBO_CHARGING = 12;
+const int SPUME_COMBO_FIRING = 16;
+
+ffc script Spume
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        int spawnType;
+        int spawnFlag;
+        int spawnPoint;
+        int defenses[18];
+        int timer;
+        bool cancelShot;
+        
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_STUN);
+        Ghost_SetFlag(GHF_CLOCK);
+        Ghost_SetFlag(GHF_4WAY);
+        
+        // Find a spawn point first
+        spawnType=Ghost_GetAttribute(ghost, SPUME_ATTR_SPAWN_TYPE, -1);
+        spawnFlag=Ghost_GetAttribute(ghost, SPUME_ATTR_SPAWN_FLAG, -1);
+        if(spawnType==-1 && spawnFlag==-1)
+            spawnPoint=FindSpawnPoint(false, false, true, false);
+        else
+            spawnPoint=FindSpawnPoint(spawnType, spawnFlag);
+        
+        // Spawn
+        Ghost_X=ComboX(spawnPoint);
+        Ghost_Y=ComboY(spawnPoint);
+        Ghost_SpawnAnimationPuff(this, ghost);
+        
+        // Other setup
+        Ghost_StoreDefenses(ghost, defenses);
+        this->Misc[SPUME_IDX_BASE_COMBO]=Ghost_Data;
+        Ghost_SetAllDefenses(ghost, NPCDT_IGNORE);
+        ghost->Defense[NPCD_BOMB]=defenses[NPCD_BOMB]; // Don't ignore bombs
+        ghost->Defense[NPCD_SBOMB]=defenses[NPCD_SBOMB];
+        
+        while(true)
+        {
+            // Wait until Link is far away for a full second before emerging
+            for(timer=0; timer<60; timer++)
+            {
+                if(LinkTooClose())
+                    timer=0;
+                
+                FaceLink();
+                Ghost_Waitframe(this, ghost, true, true);
+            }
+            
+            Emerge(this, ghost, defenses);
+            
+            // Fire every so often as long as Link isn't too close
+            cancelShot=false;
+            while(true)
+            {
+                for(timer=Rand(SPUME_FIRE_RATE_MIN, SPUME_FIRE_RATE_MAX);
+                    timer>0; timer--)
+                {
+                    FaceLink();
+                    Ghost_Waitframe(this, ghost, true, true);
+                    if(LinkTooClose())
+                    {
+                        cancelShot=true;
+                        break;
+                    }
+                }
+                
+                // Link got too close; abort
+                if(cancelShot)
+                    break;
+                
+                Fire(this, ghost);
+            }
+            
+            Submerge(this, ghost, defenses);
+        }
+    }
+    
+    // Shoot at Link
+    void Fire(ffc this, npc ghost)
+    {
+        int projSprite=Ghost_GetAttribute(ghost, SPUME_ATTR_PROJ_SPRITE, 17);
+        int projSound=ghost->Attributes[SPUME_ATTR_PROJ_SOUND];
+        int projTrans=ghost->Attributes[SPUME_ATTR_PROJ_TRANS];
+        int projFlags;
+        eweapon wpn;
+        
+        // Set up eweapon flags
+        projFlags=EWF_SHADOW|EWF_ROTATE;
+        if(projTrans==1 || projTrans==3)
+            projFlags|=EWF_FLICKER;
+        
+        if(CurrentShieldLevel()<ghost->Attributes[SPUME_ATTR_SHIELD_LEVEL])
+            projFlags|=EWF_UNBLOCKABLE;
+        
+        // Charge for half a second
+        Game->PlaySound(ghost->Attributes[SPUME_ATTR_CHARGE_SOUND]);
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_CHARGING;
+        Ghost_Waitframes(this, ghost, true, true, SPUME_CHARGE_TIME);
+        
+        // And fire
+        wpn=FireAimedEWeapon(SPUME_EWEAPON, Ghost_X, Ghost_Y, 0,
+                             SPUME_PROJ_STEP, ghost->WeaponDamage, projSprite,
+                             projSound, projFlags);
+        if(ghost->Attributes[SPUME_ATTR_PROJ_ARC]>0)
+        {
+            SetEWeaponMovement(wpn, EWM_THROW, -1);
+            SetEWeaponDeathEffect(wpn, EWD_VANISH, 0);
+        }
+        
+        // No EWF_TRANSLUCENT yet
+        if(projTrans==2 || projTrans==3)
+            wpn->DrawStyle=DS_PHANTOM;
+        
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_FIRING;
+        Ghost_Waitframes(this, ghost, true, true, SPUME_FIRE_TIME);
+        
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_EMERGED;
+    }
+    
+    void Emerge(ffc this, npc ghost, int defenses)
+    {
+        Game->PlaySound(ghost->Attributes[SPUME_ATTR_EMERGE_SOUND]);
+        Ghost_SetDefenses(ghost, defenses);
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_EMERGING;
+        Ghost_Waitframes(this, ghost, true, true, 12);
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_EMERGED;
+    }
+    
+    void Submerge(ffc this, npc ghost, int defenses)
+    {
+        Game->PlaySound(ghost->Attributes[SPUME_ATTR_SUBMERGE_SOUND]);
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_EMERGING;
+        Ghost_Waitframes(this, ghost, true, true, 12);
+        Ghost_Data=this->Misc[SPUME_IDX_BASE_COMBO]+SPUME_COMBO_SUBMERGED;
+        
+        // Ignore everything but bombs while submerged
+        Ghost_SetAllDefenses(ghost, NPCDT_IGNORE);
+        ghost->Defense[NPCD_BOMB]=defenses[NPCD_BOMB];
+        ghost->Defense[NPCD_SBOMB]=defenses[NPCD_SBOMB];
+    }
+    
+    // Set Ghost_Dir to face Link
+    void FaceLink()
+    {
+        float angle=Angle(Ghost_X, Ghost_Y, Link->X, Link->Y);
+        Ghost_Dir=AngleDir4(WrapDegrees(angle));
+    }
+    
+    // Is Link too close for the Spume to come out?
+    bool LinkTooClose()
+    {
+        return Distance(Ghost_X, Ghost_Y, Link->X, Link->Y)<SPUME_SAFE_DIST;
+    }
+    
+    // Get the level of Link's current shield
+    int CurrentShieldLevel()
+    {
+        itemdata id;
+        int maxLevel=0;
+        
+        for(int i=0; i<256; i++)
+        {
+            if(!Link->Item[i])
+                continue;
+            
+            id=Game->LoadItemData(i);
+            if(id->Family!=SPUME_IC_SHIELD)
+                continue;
+            
+            if(id->Level>maxLevel)
+                maxLevel=id->Level;
+        }
+        
+        return maxLevel;
+    }
+}
+
+
+
+
+
+
+
+const float TWA_JUMP_SPEED=2; // Speed in pixels per frame when jumping
+
+// npc->Attributes[] indices
+const int TWA_ATTR_SLIME_ID=0;
+const int TWA_ATTR_JUMP_SOUND=1;
+const int TWA_ATTR_LAND_SOUND=2;
+const int TWA_ATTR_JUMPY=3;
+
+ffc script TwinAmoeba
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        npc slime[2];
+        int currentSlime;
+        bool jumpy;
+        lweapon wpn;
+        int i;
+        
+        // Initialize
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_NO_FALL);
+        Ghost_SetFlag(GHF_CLOCK);
+        Ghost_SetFlag(GHF_SET_OVERLAY);
+        Ghost_SpawnAnimationPuff(this, ghost);
+        currentSlime=0;
+        jumpy=ghost->Attributes[TWA_ATTR_JUMPY]!=0;
+        
+        // Create the first slime at the core's position; the second is randomly placed
+        slime[0]=Screen->CreateNPC(ghost->Attributes[TWA_ATTR_SLIME_ID]);
+        slime[0]->X=Ghost_X;
+        slime[0]->Y=Ghost_Y;
+        slime[1]=SpawnNPC(ghost->Attributes[TWA_ATTR_SLIME_ID]);
+        
+        Ghost_SetAllDefenses(slime[0], NPCDT_IGNORE);
+        Ghost_SetAllDefenses(slime[1], NPCDT_IGNORE);
+        
+        while(true)
+        {
+            // If the core just got hit, jump to the other slime
+            if(Ghost_GotHit())
+            {
+                SlimeJump(this, ghost, slime[currentSlime], slime[currentSlime^1], true);
+                currentSlime^=1; // Switch index between 0 and 1
+            }
+            // If Link is too close and the other slime is farther, jump over
+            else if(Distance(Ghost_X, Ghost_Y, Link->X, Link->Y)<32)
+            {
+                if(SlimeJump(this, ghost, slime[currentSlime], slime[currentSlime^1], false))
+                    currentSlime^=1;
+            }
+            else if(jumpy)
+            {
+                // Jumpy ones jump whenever a weapon is too close
+                for(i=Screen->NumLWeapons(); i>0; i--)
+                {
+                    wpn=Screen->LoadLWeapon(i);
+                    
+                    // This could be a lot of checks, so just look at X and Y difference
+                    if(Abs(wpn->X-Ghost_X)<32 && Abs(wpn->Y-Ghost_Y)<32)
+                    {
+                        SlimeJump(this, ghost, slime[currentSlime], slime[currentSlime^1], true);
+                        currentSlime^=1;
+                        break;
+                    }
+                }
+            }
+            
+            Ghost_X=slime[currentSlime]->X;
+            Ghost_Y=slime[currentSlime]->Y;
+            
+            TwAWaitframe(this, ghost, slime[0], slime[1]);
+        }
+    }
+    
+    
+    // Jump from one slime to the other. If not forced, it won't jump if the other slime is
+    // closer to Link. Returns true if it jumps, false if not.
+    bool SlimeJump(ffc this, npc ghost, npc startSlime, npc destSlime, bool force)
+    {
+        // If not forced, see if the destination slime is closer to Link than the starting slime;
+        // if so, don't do anything
+        if(!force)
+        {
+            if(Distance(startSlime->X, startSlime->Y, Link->X, Link->Y)>=Distance(destSlime->X, destSlime->Y, Link->X, Link->Y))
+                return false;
+        }
+    
+        int startX;
+        int startY;
+        int targetX;
+        int targetY;
+        float angle;
+        float totalDist;
+        float currentDist;
+        
+        // Ignore clocks while jumping so the core doesn't get stuck in midair
+        Ghost_UnsetFlag(GHF_CLOCK);
+        Game->PlaySound(ghost->Attributes[TWA_ATTR_JUMP_SOUND]);
+        
+        // Jump
+        do
+        {
+            // Get the current position of the two slimes
+            startX=startSlime->X;
+            startY=startSlime->Y;
+            targetX=destSlime->X;
+            targetY=destSlime->Y;
+            
+            // Move toward one from the other
+            angle=Angle(Ghost_X, Ghost_Y, targetX, targetY);
+            Ghost_X+=VectorX(TWA_JUMP_SPEED, angle);
+            Ghost_Y+=VectorY(TWA_JUMP_SPEED, angle);
+            
+            // Set height based on how much of the total distance has been covered
+            totalDist=Distance(startX, startY, targetX, targetY);
+            currentDist=Distance(Ghost_X, Ghost_Y, targetX, targetY);
+            Ghost_Z=totalDist/2*Sin(currentDist/totalDist*180);
+            
+            TwAWaitframe(this, ghost, startSlime, destSlime);
+        } while(currentDist>1);
+        
+        Ghost_Z=0;
+        Ghost_SetFlag(GHF_CLOCK);
+        Game->PlaySound(ghost->Attributes[TWA_ATTR_LAND_SOUND]);
+        return true;
+    }
+    
+    
+    void TwAWaitframe(ffc this, npc ghost, npc slime1, npc slime2)
+    {
+        // The slimes should be invincible, but if one becomes invalid, kill everything
+        if(!slime1->isValid())
+        {
+            ghost->HP=0;
+            if(slime2->isValid())
+                slime2->HP=0;
+            this->Data=0;
+            Quit();
+        }
+        else if(!slime2->isValid())
+        {
+            ghost->HP=0;
+            slime1->HP=0;
+            this->Data=0;
+            Quit();
+        }
+        
+        // Still valid - try to keep them alive, no matter what
+        else
+        {
+            if(slime1->HP<32768)
+                slime1->HP=32768;
+            if(slime2->HP<32768)
+                slime2->HP=32768;
+        }
+        
+        // If the core is dead, kill the slimes as well
+        if(!Ghost_Waitframe(this, ghost, true, false))
+        {
+            slime1->HP=0;
+            slime2->HP=0;
+            Quit();
+        }
+    }
+}
+
+
+
+
+const int BUZZ_MIN_WALKS = 1;
+const int BUZZ_MAX_WALKS = 8;
+const int BUZZ_WALK_TIME = 60;
+const int BUZZ_WAIT_TIME = 60;
+const int BUZZ_SHOCK_TIME = 30;
+
+// npc->Attributes[] indices
+const int BUZZ_ATTR_SWORD_LEVEL = 0;
+const int BUZZ_ATTR_SFX_SHOCK = 1;
+const int BUZZ_ATTR_SHOCK_SPRITE = 2;
+
+// ffc->Misc[] index
+const int BUZZ_IDX_SHOCKING = 0;
+
+ffc script BuzzBlob
+{
+    void run(int enemyID)
+    {
+        npc ghost;
+        int swordDefense;
+        int step;
+        int angle;
+        int haltRate;
+        int randomRate;
+        int homing;
+        int hunger;
+        lweapon bait;
+        
+        // Initialize
+        ghost=Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_SET_DIRECTION);
+        Ghost_SetFlag(GHF_KNOCKBACK);
+        Ghost_SpawnAnimationPuff(this, ghost);
+        
+        randomRate=ghost->Rate;
+        haltRate=ghost->Haltrate;
+        homing=ghost->Homing;
+        step=ghost->Step/100;
+        angle=45*Rand(8);
+        hunger=ghost->Hunger;
+        swordDefense=ghost->Defense[NPCD_SWORD];
+        
+        while(true)
+        {
+            // Walk around
+            do
+            {
+                // Change direction
+                if(Rand(16)<randomRate)
+                {
+                    // Go for bait?
+                    bait=LoadLWeaponOf(LW_BAIT);
+                    if(bait->isValid() && Rand(4)<hunger)
+                        angle=45*Round(ArcTan(bait->X-Ghost_X, bait->Y-Ghost_Y)/(PI/4));
+                    // Aim at Link?
+                    else if(Rand(256)<homing)
+                        angle=45*Round(ArcTan(Link->X-Ghost_X, Link->Y-Ghost_Y)/(PI/4));
+                    else
+                        angle=45*Rand(8);
+                }
+                
+                // Move
+                for(int i=0; i<BUZZ_WALK_TIME; i++)
+                {
+                    Ghost_MoveAtAngle(angle, step, step);
+                    BuzzWaitframe(this, ghost, swordDefense);
+                }
+            } while(Rand(16)>=haltRate);
+            
+            // Stand still
+            BuzzWaitframes(this, ghost, swordDefense, BUZZ_WAIT_TIME);
+        }
+    }
+    
+    void BuzzWaitframe(ffc this, npc ghost, int swordDefense)
+    {
+        bool weakSword;
+        
+        // Is Link's sword too weak to hurt the blob?
+        if(CurrentSwordLevel()<ghost->Attributes[BUZZ_ATTR_SWORD_LEVEL])
+        {
+            weakSword=true;
+            ghost->Defense[NPCD_SWORD]=NPCDT_IGNORE;
+        }
+        else
+        {
+            weakSword=false;
+            ghost->Defense[NPCD_SWORD]=swordDefense;
+        }
+        
+        // If Link's sword is too strong, just wait
+        if(!weakSword)
+            Ghost_Waitframe(this, ghost, true, true);
+        // Same thing if another Buzz Blob is already shocking Link
+        else if(AlreadyBeingShocked(this))
+            Ghost_Waitframe(this, ghost, true, true);
+        // If stunned or a clock is active, set sword defense to normal and wait to recover
+        else if(ghost->Stun>0 || ClockIsActive())
+        {
+            ghost->Defense[NPCD_SWORD]=swordDefense;
+            
+            while(ghost->Stun>0 || ClockIsActive())
+                Ghost_Waitframe(this, ghost, true, true);
+            
+            ghost->Defense[NPCD_SWORD]=NPCDT_IGNORE;
+        }
+        
+        // Otherwise, check for sword collisions
+        else
+        {
+            lweapon sword;
+            for(int i=Screen->NumLWeapons(); i>0; i--)
+            {
+                sword=Screen->LoadLWeapon(i);
+                
+                // Found a sword
+                if(sword->ID==LW_SWORD)
+                {
+                    // Hit by sword; create an eweapon to hurt Link
+                    if(Collision(sword, ghost))
+                    {
+                        eweapon wpn;
+                        int oldLinkX;
+                        int oldLinkY;
+                        bool oldLinkInvis;
+                        bool oldLinkColl;
+                        
+                        // Set this so other Buzz Blobs don't activate
+                        this->Misc[BUZZ_IDX_SHOCKING]=1;
+                        
+                        // Remember Link's data
+                        oldLinkX=Link->X;
+                        oldLinkY=Link->Y;
+                        oldLinkInvis=Link->Invisible;
+                        oldLinkColl=Link->CollDetection;
+                        
+                        // Flash
+                        Ghost_Data++;
+                        Ghost_StartFlashing();
+                        
+                        // Hurt Link, hide him, draw the shock graphic, and play the sound
+                        Link->HP-=4*ghost->WeaponDamage;
+                        
+                        Link->Invisible=true;
+                        Link->CollDetection=false;
+                        
+                        lweapon graphic=Screen->CreateLWeapon(LW_SCRIPT1);
+                        graphic->UseSprite(ghost->Attributes[BUZZ_ATTR_SHOCK_SPRITE]);
+                        graphic->X=Link->X;
+                        graphic->Y=Link->Y;
+                        graphic->CollDetection=false;
+                        graphic->DeadState=BUZZ_SHOCK_TIME;
+                        
+                        Game->PlaySound(ghost->Attributes[BUZZ_ATTR_SFX_SHOCK]);
+                        Screen->Quake=Max(Screen->Quake, 30);
+                        
+                        for(int j=0; j<BUZZ_SHOCK_TIME; j++)
+                        {
+                            NoAction();
+                            Link->X=oldLinkX;
+                            Link->Y=oldLinkY;
+                            Ghost_Waitframe(this, ghost, true, true);
+                            
+                            // Make Link visible again if he died
+                            if(Link->HP<=0)
+                                Link->Invisible=oldLinkInvis;
+                        }
+                        
+                        // Unhide Link, stop flashing
+                        Link->Invisible=oldLinkInvis;
+                        Link->CollDetection=oldLinkColl;
+                        this->Misc[BUZZ_IDX_SHOCKING]=0;
+                        Ghost_Data--;
+                    }
+                    
+                    break;
+                }
+            }
+            Ghost_Waitframe(this, ghost, true, true);
+        }
+    }
+    
+    void BuzzWaitframes(ffc this, npc ghost, int swordDefense, int numFrames)
+    {
+        for(; numFrames>0; numFrames--)
+            BuzzWaitframe(this, ghost, swordDefense);
+    }
+    
+    // Get the level of Link's current sword
+    int CurrentSwordLevel()
+    {
+        int weapon;
+        itemdata id;
+        
+        // Check A first
+        weapon=GetEquipmentA();
+        id=Game->LoadItemData(weapon);
+        if(id->Family==IC_SWORD)
+            return id->Level;
+        
+        // No sword on A; try B
+        weapon=GetEquipmentB();
+        id=Game->LoadItemData(weapon);
+        if(id->Family==IC_SWORD)
+            return id->Level;
+        
+        // It's possible no sword is equipped; maybe the player used the sword
+        // and then immediately changed weapons. In that case, find the highest
+        // level sword Link has and assume that's what was used.
+        
+        int ret = -1;
+        int curlevel = -1;
+        
+        // Check each item
+        for(int i = 0; i < 256; i++)
+        {
+            // Does Link have the current item?
+            if(!Link->Item[i])
+                continue;
+            
+            // Is it a sword?
+            id = Game->LoadItemData(i);
+            if(id->Family != IC_SWORD)
+                continue;
+            
+            // Check its level
+            if(id->Level > curlevel)
+                curlevel = id->Level;
+        }
+        
+        return curlevel;
+    }
+    
+    // Is another Buzz Blob already shocking Link?
+    bool AlreadyBeingShocked(ffc this)
+    {
+        ffc otherBB;
+        
+        // Check each other FFC
+        for(int i=1; i<=32; i++)
+        {
+            otherBB=Screen->LoadFFC(i);
+            
+            if(otherBB==this)
+                continue;
+            
+            // Right script and Misc[] index set? Then it's shocking Link.
+            if(otherBB->Script==this->Script &&
+               otherBB->Misc[BUZZ_IDX_SHOCKING]!=0)
+                return true;
+        }
+        
+        return false;
+    }
+}
+
+//*****************************************************************************************
+//This enemy walks around, without stopping, in random directions for
+//    semi-random distances.  If Link gets in its horizontal path, it
+//    speeds up and zooms in his direction.
+//
+//This approximately recreates the behavior of crabs in Link's Awakening,
+//    among other games.
+//
+//Enemy Attributes Used:
+//    -Step Speed: Determines speed (standard: 25)
+//    -Misc. Attr. 1: Minimum pixel distance for each walk phase (default: 8)
+//  -Misc. Attr. 2: Maximum pixel distance for each walk phase (default: 16)
+//    -Misc. Attr. 3: Amount step rate is mutliplied by when zooming (default: 6)
+//    -Misc. Attr. 11: GH_INVISIBLE_COMBO
+//    -Misc. Attr. 12: Script Slot
+
+//Misc. Attribute Indexes
+const int Z4CRAB_MIN_DIST_INDEX = 0;
+const int Z4CRAB_MAX_DIST_INDEX = 1;
+const int Z4CRAB_MULTIPLIER = 2;
+
+ffc script Z4Crab {
+    void run(int enemyID) {
+    
+        npc ghost;
+        int dist;
+        float dir;
+        float minDist;
+        float maxDist;
+        float step;
+        float multiplier;
+        int fRate;
+        
+        //Initialize
+        ghost = Ghost_InitAutoGhost(this, enemyID);
+        Ghost_SetFlag(GHF_NORMAL);
+        step = ghost->Step/100;
+        minDist = Ghost_GetAttribute(ghost, Z4CRAB_MIN_DIST_INDEX, 8)*.5/step;
+        maxDist = Ghost_GetAttribute(ghost, Z4CRAB_MAX_DIST_INDEX, 16)*.5/step;
+        multiplier = Ghost_GetAttribute(ghost, Z4CRAB_MULTIPLIER, 6);
+        fRate = ghost->ASpeed;
+        
+        while(true) {            
+            //choose dir and distance
+            dir = Rand(4);
+            dist = Rand(minDist,maxDist);
+            
+            // Move
+            ghost->ASpeed = fRate;            
+            for(int i=0; i<dist; i++) {
+                if (Ghost_CanMove(dir,1,3)){
+                    Ghost_Move(dir,step,3);
+                    if (Abs(Link->Y - Ghost_Y)<8)
+                        zoom(this,ghost,step*multiplier);
+                    Ghost_Waitframe(this, ghost, true, true);
+                }
+            }
+            if (!Ghost_CanMove(dir,1,3))
+                Ghost_Waitframe(this,ghost,true,true);
+        }
+    }
+    
+    void zoom(ffc this, npc ghost, float step){
+        ghost->ASpeed/=2;
+        if (Link->X - Ghost_X > 0) { //zoom right
+            while (Ghost_CanMove(3,1,3)){
+                Ghost_Move(3,step,3);
+                Ghost_Waitframe(this, ghost, true, true);
+            }
+        }
+        else if (Link->X - Ghost_X < 0) { //zoom left
+            while (Ghost_CanMove(2,1,3)){
+                Ghost_Move(2,step,3);
+                Ghost_Waitframe(this, ghost, true, true);
+            }
+        }
+        ghost->ASpeed*=2;
+    }
+}
+
+//***************************************************************
+ffc script Ropa
+{
+        void run(int enemyID)
+        {
+                //Init
+                npc ghost = Ghost_InitAutoGhost(this, enemyID);
+                ghost->Extend = 3;
+                Ghost_SetFlag(GHF_KNOCKBACK_4WAY);
+                Ghost_SetFlag(GHF_STUN);
+                Ghost_SetFlag(GHF_CLOCK);
+                Ghost_Transform(this, ghost, -1, -1, -1, 2);
+                Ghost_SetHitOffsets(ghost, 8, 8, 0, 0);
+
+                //Declarations
+                float step = ghost->Step/100;
+                int counter = 0;
+
+                //Spawn Animation
+                Ghost_SpawnAnimationPuff(this, ghost);
+
+                //Behavior Loop
+                do
+                {
+                        if(Ghost_Z == 0)
+                        {
+                                if(counter==0)
+                                {
+                                        Ghost_Jump = 2;
+                                        counter = Rand( 8)<<4;
+                                }
+                                else counter--;
+                        }
+                        else if(!Ghost_GotHit()) Ghost_MoveTowardLink(step, 0);
+                } while(Ghost_Waitframe(this, ghost, true, true));
+        }
+}

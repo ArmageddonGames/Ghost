@@ -6,7 +6,7 @@
 // Standard settings -----------------------------------------------------------
 
 // Small (1x1) shadow settings
-const int GH_SHADOW_TILE = 27400;
+const int GH_SHADOW_TILE = 26680;
 const int GH_SHADOW_CSET = 7;
 const int GH_SHADOW_FRAMES = 4;
 const int GH_SHADOW_ANIM_SPEED = 8;
@@ -138,16 +138,16 @@ bool __HaveAmulet()
 import "ghost_zh/2.8/common.zh"
 import "ghost_zh/2.8/deprecated.zh"
 import "ghost_zh/2.8/drawing.zh"
-import "ghost_zh/2.8/eweapon.zh"
-import "ghost_zh/2.8/eweaponDeath.zh"
-import "ghost_zh/2.8/eweaponMovement.zh"
+import "ghost_zh/2.8/eweapon - YuuRand.zh"
+import "ghost_zh/2.8/eweaponDeath - YuuRand.zh"
+import "ghost_zh/2.8/eweaponMovement - YuuRand.zh"
 import "ghost_zh/2.8/flags.zh"
 import "ghost_zh/2.8/global.zh"
 import "ghost_zh/2.8/init.zh"
 import "ghost_zh/2.8/modification.zh"
 import "ghost_zh/2.8/movement.zh"
 import "ghost_zh/2.8/other.zh"
-import "ghost_zh/2.8/update.zh"
+import "ghost_zh/2.8/update - YuuRand.zh"
 
 import "ghost_zh/2.8/scripts.z"
 
