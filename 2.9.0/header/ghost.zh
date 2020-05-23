@@ -13,6 +13,7 @@
 // ("GH2Z"); //Z Axis
 // ("GH2NMES"); //Enemy config
 // ("GH2FFC"); //General FFC config
+// "GH2MISC" Misc settings
 
 namespace ghost2
 {
@@ -39,6 +40,13 @@ namespace ghost2
 			
 			useffcMIN, useffcMAX, usenpcMIN, useNPCMAX,
 			settingALWAYSUSEENEMYNAME, settingBLANKTILE, settingBLANKCMB,
+			
+			settingIMPRECISION, useffcLINK, settingANONEFIX, 
+			useffcETHEREAL, settingWEAPONSHITPLATFORMS, settingFIXEWFALL,
+			settingFIXEWTHROW, settingNPCMISCINDEX, settingKNOCKBACKSTEP,
+			settingKNOCKBACKFRAMES, settingFLASHTIME, settingUSEDRAWCOMBO,
+			settingINVISEXTENDVALUE, settingINVISALTVALUE, 
+			settingAUTOGHOSTREADNAME, settingAUTOGHOSTDELIM, 
 			
 			/*
 			const int GH_DRAW_OVER_THRESHOLD = 32;
@@ -99,18 +107,25 @@ namespace ghost2
 		
 		enum enemysettings
 		{
-			nmesSPAWNSPRITE, nmesFLICKER = 0, nmesGHOSTSHADOWS, nmesUSENAME, nmesMIN = 0, nmesMAX, nmesLAST
+			/*attribytes*/ nmesSPAWNSPRITE, nmesKNOCKBACKSTEP, nmesKNOCKBACKFRAMES, nmesFLASHDUR,
+			/*flags*/ nmesFLICKER = 0, nmesGHOSTSHADOWS, nmesUSENAME, nmesUSEDRAWCOMBO, nmesANIMNONEFIX,
+			/*attributes*/ 
+			nmesMIN = 0, nmesMAX, nmesINVISALT, nmesINVISEXTEND, 
 		};
 		
 		//Initialises all ghost settings.
 		void init()
 		{
 			initVersioninfo();
+			initGraphics();
+			initWeapons();
+			initAG();
+			initMisc();
+			initFFCs();
 			initZAxis();
 			initEnemySettings();
 			initGravity();
 			initShadows();
-			initGraphics();
 		}
 		
 		//Initialises the version of ghost at runtime for readback.
@@ -119,11 +134,17 @@ namespace ghost2
 			
 		}
 		
-		enum ffcsettings
+		enum autghostsettings 
 		{
-			fMIN, fMAX, fLAST
+			agREADNAME, agDELIM, agLAST
 		};
 		
+		enum ffcsettings
+		{
+			/*attributes*/ fMIN, fMAX, /*flags*/ fLINK = 0, fETHEREAL, fLAST
+		};
+		
+		//Initialises all base ghost graphics from two combos.
 		void initGraphics()
 		{
 			combdata tileinfo;
@@ -146,6 +167,71 @@ namespace ghost2
 			config[settingBLANKCMB] = comboinfo->ID;
 		}
 		
+		enum wpnsettings
+		{
+			/*flags*/ wsHITPLATFORMS, wsFIXEWFALL, wsFIXEWTHROW, wsLAST
+		}
+		
+		//Initialises all base ghost weapon settings from one combo.
+		void initWeapons()
+		{
+			combodata wpninfo;
+			int c = Game->GetCombo("GH2WPN");
+			if (c == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2AG' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
+			else wpninfo = Game->LoadComboData(c);
+			data[settingWEAPONSHITPLATFORMS] = ( (aginfo->Flags[wsHITPLATFORMS]) ? 1 : 0 ); //1
+			data[settingFIXEWFALL] = ( (aginfo->Flags[wsFIXEWFALL]) ? 1 : 0 ); //1
+			data[settingFIXEWTHROW] = ( (aginfo->Flags[wsFIXEWTHROW]) ? 1 : 0 ); //1
+		}
+		
+		enum autoghostsettings
+		{
+			agREADNAME, agDELIM = 0, agLAST
+		};
+		
+		//Initialises all base autoghost values from one combo.
+		void initAG()
+		{
+			combodata aginfo;
+			int c = Game->GetCombo("GH2AG");
+			if (c == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2AG' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
+			else aginfo = Game->LoadComboData(c);
+			//Attribytes
+			config[settingAUTOGHOSTDELIM] = ( (aginfo->Attribytes[agDELIM]) ? (aginfo->Attribytes[agDELIM]) : 64 );
+			//Flags
+			data[settingAUTOGHOSTREADNAME] = ( (aginfo->Flags[agREADNAME]) ? 1 : 0 ); //1
+		}
+		
+		enum miscvalues
+		{
+			mivalIMPRECISION, mivalNPCMISCINDEX, 
+			mivalLAST
+		};
+		
+		//Initialises all misc ghost graphics from one combo.
+		void initMisc()
+		{
+			combodata miscinfo;
+			int c = Game->GetCombo("GH2MISC");
+			if (c == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2MISC' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
+			else miscinfo = Game->LoadComboData(c);
+			//Attributes
+			config[settingIMPRECISION] = miscinfo->Attributes[mivalIMPRECISION];
+			config[settingNPCMISCINDEX] = miscinfo->Attributes[mivalNPCMISCINDEX];
+		}
+		
 		//Sets ghost ffc properties based off of one combo.
 		void initFFCs()
 		{
@@ -157,9 +243,13 @@ namespace ghost2
 				return;
 			}
 			else ffcinfo = Game->LoadComboData(c);
-			data[useffcMIN] = vbound(ffcinfo->Attribytes[fMIN], 1, 32);
-			data[useffcMAX] = vbound(ffcinfo->Attribytes[fMIN], 1, 32);
-			//useffcMIN, useffcMAX, usenpcMIN, useNPCMAX,
+			//Attribytes, 4 max
+			data[useffcMIN] = vbound(ffcinfo->Attribytes[fMIN], 1, 32); //0
+			data[useffcMAX] = vbound(ffcinfo->Attribytes[fMAX], 1, 32); //1
+			
+			//Flags, 16 max
+			data[useffcLINK] = ( (ffcinfo->Flags[fLINK]) ? 1 : 0 ); //0
+			data[useffcETHEREAL] = ( (ffcinfo->Flags[fETHEREAL]) ? 1 : 0 ); //1
 		}
 		
 		//Sets ghost Z-Axis behavioural properties based off of one combo.
@@ -188,15 +278,29 @@ namespace ghost2
 				return;
 			}
 			else nmesinfo = Game->LoadComboData(c);
+			//Flags (16 total)
 			data[settingENEMIESFLICKER] = ( (nmesinfo->Flags[nmesFLICKER]) ? 1 : 0 );
 			data[settingPREFERGHOSTSHADOWS] = ( (nmesinfo->Flags[nmesGHOSTSHADOWS]) ? 1 : 0 );
-			data[settingSPAWNSPRITE] = nmesinfo->Attribytes[nmesSPAWNSPRITE];
-			data[usenpcMIN] = nmesinfo->Attributes[nmesMIN]; 
-			data[useNPCMAX] = nmesinfo->Attributes[nmesMAX];
-			data[settingALWAYSUSEENEMYNAME] = nmesinfo->Flags[nmesUSENAME];
+			data[settingUSEDRAWCOMBO] = ( (nmesinfo->Flags[nmesUSEDRAWCOMBO]) ? 1 : 0 );
+			data[settingALWAYSUSEENEMYNAME] = ( (nmesinfo->Flags[nmesUSENAME]) ? 1 : 0 );
+			data[settingANONEFIX] = ( (nmesinfo->Flags[nmesANIMNONEFIX]) ? 1 : 0 );
+			//Attribytes (all used)
+			data[settingSPAWNSPRITE] = nmesinfo->Attribytes[nmesSPAWNSPRITE]; //0
+			data[settingKNOCKBACKFRAMES] = nmesinfo->Attribytes[nmesKNOCKBACKFRAMES]; //1
+			data[settingKNOCKBACKSTEP] = nmesinfo->Attribytes[nmesKNOCKBACKSTEP]; //2
+			data[settingFLASHTIME] = nmesinfo->Attribytes[nmesFLASHDUR]; //3
+	
+			//Attributes (all used)
+			data[usenpcMIN] = nmesinfo->Attributes[nmesMIN]; //0
+			data[useNPCMAX] = nmesinfo->Attributes[nmesMAX]; //1
+			data[settingINVISALTVALUE] = nmesinfo->Attributes[nmesINVISALT]; //2
+			data[settingINVISEXTENDVALUE] = nmesinfo->Attributes[nmesINVISEXTEND], //3
+			
+			nmesLAST
 			
 		}
 		
+		//Initialises base ghost gravity from quest graity settings.
 		void initGravity()
 		{
 			data[settingDRAWOVERTHRESHOLD] = Game->Gravity[GR_SPRLAYER];
@@ -204,6 +308,7 @@ namespace ghost2
 			data[settingTERMVELOCITY] = Game->Gravity[GR_TERMINALV];
 		}
 		
+		//Initialises all base ghost shadow graphics and settings from two combos.
 		void initShadows()
 		{
 			combodata shadow1x1;
@@ -240,6 +345,8 @@ namespace ghost2
 			data[cmbcfgSHADOW1X1_FLICKER] = ( (shadow1x1->Flags[1]) ? 1 : 0 );
 			data[cmbcfgSHADOW2X2_FLICKER] = ( (shadow1x1->Flags[1]) ? 1 : 0 );
 		}
+		
+		//Accessors
 	}
 	
 	/* Port these constants to the array indices
@@ -289,7 +396,7 @@ namespace ghost2
 	// Always read script name and combo from the enemy's name,
 	// freeing up attributes 11 and 12
 	const int __GH_ALWAYS_USE_NAME = 0;
-	*/
+	
 
 	// End standard settings -------------------------------------------------------
 
@@ -304,7 +411,8 @@ namespace ghost2
 	// When reading a script from the enemy name, this character marks the
 	// beginning of the script name.
 	// Default: 64 ( @ )
-	const int AUTOGHOST_DELIMITER = 64;
+	const int AUTOGHOST_DELIMITER = 64; //can be a zq string, but that would still need a const somewhere, such as a settings combo
+	//may as well be a settings value on the combo for the char id
 
 	// Misc. attribute 11 can be set to this instead of GH_INVISIBLE_COMBO.
 	// Must be a negative number.
@@ -368,6 +476,7 @@ namespace ghost2
 	// npc->Misc[] index
 	// Set this so it doesn't conflict with other scripts. Legal values are 0-15.
 	const int __GHI_NPC_DATA = 15;
+	*/
 
 	// eweapon->Misc[] indices
 	// These must be unique numbers between 0 and 15.
