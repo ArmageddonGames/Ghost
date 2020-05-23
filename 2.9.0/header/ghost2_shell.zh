@@ -6,6 +6,20 @@ namespace ghost2
 	*/
 	namespace shell
 	{
+		initShell()
+		{
+			combodata shellinfo;
+			int c = Game->GetCombo("GH2SHELL");
+			if (c == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2SHELL' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
+			else shellinfo = Game->LoadComboData(c);
+			
+			//Set up SFX here. 
+			
+		}
 		
 		//Instruction set
 		//instruction		//variables
