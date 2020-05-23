@@ -12,146 +12,185 @@
 // ("GH2SH2"); //Shadow 2x2
 // ("GH2Z"); //Z Axis
 // ("GH2ENEMIES"); //Enemy config
-// ("GH2SPR"); //Z Sprite IDs
+// ("GH2FFC"); //General FFC config
 
 namespace ghost2
 {
-	enum settings 
-	{ 
-		version, subversion, patch_version, 
-		date_year, date_month, date_day, date_hour, date_minute,
-		/*padding*/
-		control_0, control_1, control_2, control_3, control_4, control_5, control_6, control_7,
-		control_8, control_9, control_10, control_11, control_12, control_13, control_14, control_15,
-		/*end padding*/
-		cmbcfgSHADOW1X1_TILE, cmbcfgSHADOW1X1_CSET, cmbcfgSHADOW1X1_FRAMES, cmbcfgSHADOW1X1_ANIMSPD, 
-		cmbcfgSHADOW1X1_TRANSLUCENT, cmbcfgSHADOW1X1_FLICKER, 
+	zstruct cfg
+	{
+		//ghost2::cfg.data[]
+		enum settingtypes
+		{ 
+			version, subversion, patch_version, 
+			date_year, date_month, date_day, date_hour, date_minute,
+			/*padding*/
+			control_0, control_1, control_2, control_3, control_4, control_5, control_6, control_7,
+			control_8, control_9, control_10, control_11, control_12, control_13, control_14, control_15,
+			/*end padding*/
+			cmbcfgSHADOW1X1_TILE, cmbcfgSHADOW1X1_CSET, cmbcfgSHADOW1X1_FRAMES, cmbcfgSHADOW1X1_ANIMSPD, 
+			cmbcfgSHADOW1X1_TRANSLUCENT, cmbcfgSHADOW1X1_FLICKER, 
+			
+			cmbcfgSHADOW2X2_TILE, cmbcfgSHADOW2X2_CSET, cmbcfgSHADOW2X2_FRAMES, cmbcfgSHADOW2X2_ANIMSPD, 
+			cmbcfgSHADOW2X2_TRANSLUCENT, cmbcfgSHADOW2X2_FLICKER, 
+			
+			settingDRAWOVERTHRESHOLD, settingGRAVITY, settingTERMVELOCITY, 
+			settingSPAWNSPRITE, settingFAKEZ, settingFAKEWPNZ, settingENEMIESFLICKER,
+			settingPREFERGHOSTSHADOWS,
+			
+			useffcMIN, useffcMAX, usenpcMIN, useNPCMAX,
+			settingALWAYSUSEENEMYNAME, settingBLANKTILE, settingBLANKCMB,
+			
+			/*
+			const int GH_DRAW_OVER_THRESHOLD = 32;
+			const float GH_GRAVITY = 0.16;
+			const float GH_TERMINAL_VELOCITY = 3.2;
+			const int GH_SPAWN_SPRITE = 22; // Min: 0, Max: 255, Default: 22
+			const int GH_FAKE_Z = 0; // 0 = No, 1 = Yes
+			const int __GH_FAKE_EWEAPON_Z = 0; // 0 = No, 1 = Yes
+			const int GH_ENEMIES_FLICKER = 0; // 0 = No, 1 = Yes
+			const int GH_PREFER_GHOST_ZH_SHADOWS = 0; // 0 = No, 1 = Yes
+			*/
+			
+			
+			settingsLAST 
+		};
 		
-		cmbcfgSHADOW2X2_TILE, cmbcfgSHADOW2X2_CSET, cmbcfgSHADOW2X2_FRAMES, cmbcfgSHADOW2X2_ANIMSPD, 
-		cmbcfgSHADOW2X2_TRANSLUCENT, cmbcfgSHADOW2X2_FLICKER, 
+		//Global array for configuratin data
+		untyped data[settingsLAST];
 		
-		settingDRAWOVERTHRESHOLD, settingGRAVITY, settingTERMVELOCITY, 
-		settingSPAWNSPRITE, settingFAKEZ, settingFAKEWPNZ, settingENEMIESFLICKER,
-		settingPREFERGHOSTSHADOWS,
+		enum gamemiscvalues
+		{
+			gmGhost, gmLAST = 32;
+		};
+		
+		enum settingflags
+		{
+			zaxisENEMY = 0x1, zaxisWPM = 0x2, setflgENEMIESFLICKER = 0x4, setflgGHOSTSHADOWS = 0x8, setflagLAST = 0x10
+		};
+		
+		//Perhaps these should use combos, too for combodata values.
 		
 		/*
-		const int GH_DRAW_OVER_THRESHOLD = 32;
-		const float GH_GRAVITY = 0.16;
-		const float GH_TERMINAL_VELOCITY = 3.2;
-		const int GH_SPAWN_SPRITE = 22; // Min: 0, Max: 255, Default: 22
-		const int GH_FAKE_Z = 0; // 0 = No, 1 = Yes
-		const int __GH_FAKE_EWEAPON_Z = 0; // 0 = No, 1 = Yes
-		const int GH_ENEMIES_FLICKER = 0; // 0 = No, 1 = Yes
-		const int GH_PREFER_GHOST_ZH_SHADOWS = 0; // 0 = No, 1 = Yes
+		void initZAxis()
+		{
+			data[settingFAKEZ] = ( (Game->Misc[gmGhost]&zaxisENEMY) ? 1 : 0 );
+			data[settingFAKEWPNZ] = ( (Game->Misc[gmGhost]&zaxisWPM) ? 1 : 0 );
+		}
+		
+		void initEnemySettings
+		{
+			data[settingENEMIESFLICKER] = ( (Game->Misc[gmGhost]&setflgENEMIESFLICKER) ? 1 : 0 );
+			data[settingPREFERGHOSTSHADOWS] = ( (Game->Misc[gmGhost]&setflgGHOSTSHADOWS) ? 1 : 0 );
+			
+		}
+		
+		void initGravity()
+		{
+			data[settingDRAWOVERTHRESHOLD] = Game->Gravity[GR_SPRLAYER];
+			data[settingGRAVITY] = Game->Gravity[GR_STRENGTH];
+			data[settingTERMVELOCITY] = Game->Gravity[GR_TERMINALV];
+		}
 		*/
 		
+		enum zaxis
+		{
+			zaxisFAKEZ, zaxisFAKEWPNZ, zaxisLAST
+		};
 		
-		settingsLAST 
-	};
-	float configuration[settingsLAST];
-	
-	enum gamemiscvalues
-	{
-		gmGhost, gmLAST = 32;
-	};
-	
-	enum settingflags
-	{
-		zaxisENEMY = 0x1, zaxisWPM = 0x2, setflgENEMIESFLICKER = 0x4, setflgGHOSTSHADOWS = 0x8, setflagLAST = 0x10
-	};
-	
-	//Perhaps these should use combos, too for combodata values.
-	
-	/*
-	void initZAxis()
-	{
-		configuration[settingFAKEZ] = ( (Game->Misc[gmGhost]&zaxisENEMY) ? 1 : 0 );
-		configuration[settingFAKEWPNZ] = ( (Game->Misc[gmGhost]&zaxisWPM) ? 1 : 0 );
-	}
-	
-	void initEnemySettings
-	{
-		configuration[settingENEMIESFLICKER] = ( (Game->Misc[gmGhost]&setflgENEMIESFLICKER) ? 1 : 0 );
-		configuration[settingPREFERGHOSTSHADOWS] = ( (Game->Misc[gmGhost]&setflgGHOSTSHADOWS) ? 1 : 0 );
+		enum enemysettings
+		{
+			nmesSPAWNSPRITE, nmesFLICKER = 0, nmesGHOSTSHADOWS, nmesUSENAME, nmesMIN = 0, nmesMAX, nmesLAST
+		};
 		
-	}
-	
-	void initGravity()
-	{
-		configuration[settingDRAWOVERTHRESHOLD] = Game->Gravity[GR_SPRLAYER];
-		configuration[settingGRAVITY] = Game->Gravity[GR_STRENGTH];
-		configuration[settingTERMVELOCITY] = Game->Gravity[GR_TERMINALV];
-	}
-	*/
-	
-	enum zaxis
-	{
-		zaxisFAKEZ, zaxisFAKEWPNZ, zaxisLAST
-	};
-	
-	enum enemysettings
-	{
-		nmesSPAWNSPRITE, nmesFLICKER = 0, nmesGHOSTSHADOWS, nmesLAST
-	};
-	
-	void init()
-	{
-		initVersioninfo();
-		initZAxis();
-		initEnemySettings();
-		initGravity();
-		initShadows();
-	}
-	
-	void initVersioninfo()
-	{
+		//Initialises all ghost settings.
+		void init()
+		{
+			initVersioninfo();
+			initZAxis();
+			initEnemySettings();
+			initGravity();
+			initShadows();
+			initGraphics();
+		}
 		
-	}
-	
-	void initZAxis()
-	{
-		combodata zinfo = Game->GetCombo("GH2Z");
-		configuration[settingFAKEZ] = ( (zinfo->Flags[zaxisFAKEZ]) ? 1 : 0 );
-		configuration[settingFAKEWPNZ] = ( (zinfo->Flags[zaxisFAKEWPNZ]) ? 1 : 0 );
-	}
-	
-	void initEnemySettings()
-	{
-		combodata zinfo = Game->GetCombo("GH2ENEMIES");
-		configuration[settingENEMIESFLICKER] = ( (zinfo->Flags[nmesFLICKER]) ? 1 : 0 );
-		configuration[settingPREFERGHOSTSHADOWS] = ( (zinfo->Flags[nmesGHOSTSHADOWS]) ? 1 : 0 );
-		configuration[settingSPAWNSPRITE] = zinfo->Attribytes[nmesSPAWNSPRITE];
+		//Initialises the version of ghost at runtime for readback.
+		void initVersioninfo()
+		{
+			
+		}
 		
-	}
-	
-	void initGravity()
-	{
-		configuration[settingDRAWOVERTHRESHOLD] = Game->Gravity[GR_SPRLAYER];
-		configuration[settingGRAVITY] = Game->Gravity[GR_STRENGTH];
-		configuration[settingTERMVELOCITY] = Game->Gravity[GR_TERMINALV];
-	}
-	
-	void initShadows()
-	{
-		combodata shadow1x1 = Game->GetCombo("GH2SH1");
-		combodata shadow2x2 = Game->GetCombo("GH2SH2");
-		configuration[cmbcfgSHADOW1X1_TILE] = shadow1x1->Tile;
-		configuration[cmbcfgSHADOW2X2_TILE] = shadow2x2->Tile;
+		enum ffcsettings
+		{
+			fMIN, fMAX, fLAST
+		};
 		
-		configuration[cmbcfgSHADOW1X1_CSET] = shadow1x1->Attribytes[0];
-		configuration[cmbcfgSHADOW1X1_CSET] = shadow2x2->Attribytes[0];
+		void initGraphics()
+		{
+			combdata tileinfo = Game->GetCombo("GH2BTILE");
+			combdata comboinfo = Game->GetCombo("GH2BCMB");
+			config[settingBLANKTILE] = tileinfo->OriginalTile;
+			config[settingBLANKCMB] = comboinfo->ID;
+		}
 		
-		configuration[cmbcfgSHADOW1X1_FRAMES] = shadow1x1->AFrames;
-		configuration[cmbcfgSHADOW1X1_FRAMES] = shadow2x2->AFrames;
+		//Sets ghost ffc properties based off of one combo.
+		void initFFCs()
+		{
+			combodata ffcinfo = Game->GetCombo("GH2FFC");
+			data[useffcMIN] = vbound(ffcinfo->Attribytes[fMIN], 1, 32);
+			data[useffcMAX] = vbound(ffcinfo->Attribytes[fMIN], 1, 32);
+			//useffcMIN, useffcMAX, usenpcMIN, useNPCMAX,
+		}
 		
-		configuration[cmbcfgSHADOW1X1_ANIMSPD] = shadow1x1->ASpeed;
-		configuration[cmbcfgSHADOW2X2_ANIMSPD] = shadow2x2->ASpeed;
+		//Sets ghost Z-Axis behavioural properties based off of one combo.
+		void initZAxis()
+		{
+			combodata zinfo = Game->GetCombo("GH2Z");
+			data[settingFAKEZ] = ( (zinfo->Flags[zaxisFAKEZ]) ? 1 : 0 );
+			data[settingFAKEWPNZ] = ( (zinfo->Flags[zaxisFAKEWPNZ]) ? 1 : 0 );
+		}
 		
-		configuration[cmbcfgSHADOW1X1_TRANSLUCENT] = ( (shadow1x1->Flags[0]) ? 1 : 0 );
-		configuration[cmbcfgSHADOW2X2_TRANSLUCENT] = ( (shadow1x1->Flags[0]) ? 1 : 0 );
+		//Sets ghost enemy behavioural properties based off of one combo.
+		void initEnemySettings()
+		{
+			combodata zinfo = Game->GetCombo("GH2ENEMIES");
+			data[settingENEMIESFLICKER] = ( (zinfo->Flags[nmesFLICKER]) ? 1 : 0 );
+			data[settingPREFERGHOSTSHADOWS] = ( (zinfo->Flags[nmesGHOSTSHADOWS]) ? 1 : 0 );
+			data[settingSPAWNSPRITE] = zinfo->Attribytes[nmesSPAWNSPRITE];
+			data[usenpcMIN] = zinfo->Attributes[nmesMIN]; 
+			data[useNPCMAX] = zinfo->Attributes[nmesMAX];
+			data[settingALWAYSUSEENEMYNAME] = zinfo->Flags[nmesUSENAME];
+			
+		}
 		
-		configuration[cmbcfgSHADOW1X1_FLICKER] = ( (shadow1x1->Flags[1]) ? 1 : 0 );
-		configuration[cmbcfgSHADOW2X2_FLICKER] = ( (shadow1x1->Flags[1]) ? 1 : 0 );
+		void initGravity()
+		{
+			data[settingDRAWOVERTHRESHOLD] = Game->Gravity[GR_SPRLAYER];
+			data[settingGRAVITY] = Game->Gravity[GR_STRENGTH];
+			data[settingTERMVELOCITY] = Game->Gravity[GR_TERMINALV];
+		}
+		
+		void initShadows()
+		{
+			combodata shadow1x1 = Game->GetCombo("GH2SH1");
+			combodata shadow2x2 = Game->GetCombo("GH2SH2");
+			data[cmbcfgSHADOW1X1_TILE] = shadow1x1->Tile;
+			data[cmbcfgSHADOW2X2_TILE] = shadow2x2->Tile;
+			
+			data[cmbcfgSHADOW1X1_CSET] = shadow1x1->Attribytes[0];
+			data[cmbcfgSHADOW1X1_CSET] = shadow2x2->Attribytes[0];
+			
+			data[cmbcfgSHADOW1X1_FRAMES] = shadow1x1->AFrames;
+			data[cmbcfgSHADOW1X1_FRAMES] = shadow2x2->AFrames;
+			
+			data[cmbcfgSHADOW1X1_ANIMSPD] = shadow1x1->ASpeed;
+			data[cmbcfgSHADOW2X2_ANIMSPD] = shadow2x2->ASpeed;
+			
+			data[cmbcfgSHADOW1X1_TRANSLUCENT] = ( (shadow1x1->Flags[0]) ? 1 : 0 );
+			data[cmbcfgSHADOW2X2_TRANSLUCENT] = ( (shadow1x1->Flags[0]) ? 1 : 0 );
+			
+			data[cmbcfgSHADOW1X1_FLICKER] = ( (shadow1x1->Flags[1]) ? 1 : 0 );
+			data[cmbcfgSHADOW2X2_FLICKER] = ( (shadow1x1->Flags[1]) ? 1 : 0 );
+		}
 	}
 	
 	/* Port these constants to the array indices
@@ -173,7 +212,7 @@ namespace ghost2
 	const int GH_LARGE_SHADOW_MIN_WIDTH = 3;  // Enemies must be at least this wide
 	const int GH_LARGE_SHADOW_MIN_HEIGHT = 3; // and this high to use large shadows
 	
-	*/
+	
 
 	// AutoGhost settings
 	const int AUTOGHOST_MIN_FFC = 1; // Min: 1, Max: 32
@@ -190,6 +229,7 @@ namespace ghost2
 	const int __GH_FAKE_EWEAPON_Z = 0; // 0 = No, 1 = Yes
 	const int GH_ENEMIES_FLICKER = 0; // 0 = No, 1 = Yes
 	const int GH_PREFER_GHOST_ZH_SHADOWS = 0; // 0 = No, 1 = Yes
+	
 
 	// Top-left corner of a 4x4 block of blank tiles
 	const int GH_BLANK_TILE = 65456; // Min: 0, Max: 65456
@@ -200,6 +240,7 @@ namespace ghost2
 	// Always read script name and combo from the enemy's name,
 	// freeing up attributes 11 and 12
 	const int __GH_ALWAYS_USE_NAME = 0;
+	*/
 
 	// End standard settings -------------------------------------------------------
 
