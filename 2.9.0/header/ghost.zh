@@ -206,8 +206,8 @@ namespace ghost2
 				return;
 			}
 			else comboinfo = Game->LoadComboData(c);
-			config[settingBLANKTILE] = tileinfo->OriginalTile;
-			config[settingBLANKCMB] = comboinfo->ID;
+			data[settingBLANKTILE] = tileinfo->OriginalTile;
+			data[settingBLANKCMB] = comboinfo->ID;
 		}
 		
 		enum wpnsettings
@@ -248,7 +248,7 @@ namespace ghost2
 			}
 			else aginfo = Game->LoadComboData(c);
 			//Attribytes
-			config[settingAUTOGHOSTDELIM] = ( (aginfo->Attribytes[agDELIM]) ? (aginfo->Attribytes[agDELIM]) : 64 );
+			data[settingAUTOGHOSTDELIM] = ( (aginfo->Attribytes[agDELIM]) ? (aginfo->Attribytes[agDELIM]) : 64 );
 			//Flags
 			data[settingAUTOGHOSTREADNAME] = ( (aginfo->Flags[agREADNAME]) ? 1 : 0 ); //1
 		}
@@ -271,8 +271,8 @@ namespace ghost2
 			}
 			else miscinfo = Game->LoadComboData(c);
 			//Attributes
-			config[settingIMPRECISION] = miscinfo->Attributes[mivalIMPRECISION];
-			config[settingNPCMISCINDEX] = miscinfo->Attributes[mivalNPCMISCINDEX];
+			data[settingIMPRECISION] = miscinfo->Attributes[mivalIMPRECISION];
+			data[settingNPCMISCINDEX] = miscinfo->Attributes[mivalNPCMISCINDEX];
 		}
 		
 		//Sets ghost ffc properties based off of one combo.
