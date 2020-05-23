@@ -1,0 +1,17 @@
+// 2.9.0 Alpha
+// Graphics routines
+namespace ghost2
+{
+	enum { gh2gfxINVCOMBO, gh2gfxINVTILE, gh2fxLAST };
+	int gfx[gh2fxLAST];
+	
+	void setup()
+	{
+		//Now one specific 4x4 tile block of all blank tiles, and one combo block that uses them
+		gfx[gh2gfxINVCOMBO] = Game->GetCombo("Gh2Invis");
+		combodata cd = Game->LoadComboData(gfx[gh2gfxINVCOMBO]);
+		gfx[gh2gfxINVTILE] = cd->OriginalTile;
+	}
+}
+		
+	
