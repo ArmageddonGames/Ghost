@@ -1,0 +1,1598 @@
+namespace ghost2
+{
+	/* A live shell that can be installed into a quest during development. 
+		It will accept commands from the user that call things such as ghost2::cfg.init()
+		to re-initialise base values. 
+	*/
+	namespace shell
+	{
+		
+		//Instruction set
+		//instruction		//variables
+		enum instructions
+		{
+			NONE,	/*NONE*/
+			WARP,		/*dmap,screen*/
+			POS,		/*x,y*/
+			MOVEX,		/*pixels (+/-)*/
+			MOVEY,		/*pixels (+/-)*/
+			REFILLHP,	/*NONE*/
+			REFILLMP,	/*NONE*/
+			REFILLCTR,	/*counter*/
+			MAXHP,		/*amount*/
+			MAXMP,		/*amount*/
+			MAXCTR,		/*counter, amount*/
+		
+			INVINCIBLE,	/*(BOOL) on / off*/
+			LINKITEM,	/*item, (BOOL), on / off*/
+			SAVE,		/*item, (BOOL), on / off*/
+			CREATEITEM,	/*item, (BOOL), on / off*/
+			CREATENPC,	/*item, (BOOL), on / off*/
+			PALETTE,	/*item, (BOOL), on / off*/
+			MONOCHROME,	/*item, (BOOL), on / off*/
+			BOMBS,		/*item, (BOOL), on / off*/
+			MBOMBS,		/*item, (BOOL), on / off*/
+			ARROWS,		/*item, (BOOL), on / off*/
+			MARROWS,	/*item, (BOOL), on / off*/
+			KEYS,		/*item, (BOOL), on / off*/
+			LKEYS,		/*item, (BOOL), on / off*/
+			RUPEES,		/*item, (BOOL), on / off*/
+			MRUPEES,	/*item, (BOOL), on / off*/
+			LMAP,		/*level map, level id, true|false*/
+			LBOSSKEY,	/*level map, level id, true|false*/
+			BIGHITBOX,	/*level map, level id, true|false*/
+			LINKDIAGONAL,	/*level map, level id, true|false*/
+			LTRIFORCE,	/*level map, level id, true|false*/
+			LCOMPASS,	/*level map, level id, true|false*/
+			RUNFFCSCRIPTID,
+			SETFFSCRIPT,
+			SETFFDATA,
+
+			TINT,
+			HUE,
+			CLEARTINT,
+
+			FCSET,
+			FX,
+			FY,
+			FVX,
+			FVY,
+			FAX,
+			FAY,
+			FFLAGS,		/*ffc flags*/
+			FTHEIGHT,
+			FTWIDTH,
+			FEHEIGHT,
+			FEWIDTH,
+			FLINK,
+			FMISC,
+
+			PLAYSOUND,
+			PLAYMIDI,
+			DMAPMIDI,
+
+			SETLIFE,
+			SETMAGIC,
+			SETCOUNTER,
+
+			SAVESEQUENCE,
+			RUNSEQUENCE,
+
+			TRACE
+		};
+		
+		const int INSTRUCTION_SIZE = 1; //The number of stack registers that any given *instruction* requires.
+		const int MAX_INSTR_QUEUE = 20; //The number of instructions that can be enqueued. 
+		const int MAX_ARGS 	= 4; //The maximum number of args that any instruction can use/require. 
+		const int STACK_SIZE 	= 2 + ((INSTRUCTION_SIZE+MAX_ARGS)*MAX_INSTR_QUEUE);  //+2 now includes TOP
+		const int MAX_TOKEN_LENGTH = 100;
+		const int BUFFER_LENGTH 	= 42;
+		int stack[STACK_SIZE];
+		int SP;
+		int ENQUEUED;
+		const int TOP = ((INSTRUCTION_SIZE+MAX_ARGS)*MAX_INSTR_QUEUE)+1;
+		int debug_buffer[BUFFER_LENGTH];
+		const int rERROR = 0;
+		const int rRAW = 1;
+		const int rENQUEUED = 2;
+		const int SEQUENCES = 10;
+		
+		const int YES = 1;
+		const int NO = 0;
+		
+		const int log_actions = NO;
+		const int WINDOW_F_KEY = 53; //We use F7 to open the debug window. 
+		
+		
+		const int FONT = FONT_APPLE2; //Apple II
+		const int F_COLOUR = 0x01; //font colour, white
+		const int F_BCOLOUR = -1; //font background colour, translucent
+		const int W_COLOUR = 0x03; //window colour (background), black
+		const int W_S_COLOUR = 0xC5; //window colour (background), black
+		const int CHAR_WIDTH = 6; //5 + one space
+		const int CHAR_HEIGHT = 9; //8 + one space
+		const int WINDOW_X = 15; //window indent over screen
+		const int WINDOW_Y = 19; //window indent over screen
+		const int WINDOW_H = 50;//CHAR_WIDTH * BUFFER_LENGTH;
+		const int WINDOW_W = 180; //CHAR_HEIGHT * 3;
+		const int WINDOW_S_X = 12; //window indent over screen
+		const int WINDOW_S_Y = 16; //window indent over screen
+		const int WINDOW_S_H = 50; //CHAR_WIDTH * BUFFER_LENGTH;
+		const int WINDOW_S_W = 180; //CHAR_HEIGHT * 3;
+		const int CHAR_X = 2; //Initial x indent
+		const int CHAR_Y = 2; //Initial y indent
+		const int W_OPACITY = OP_OPAQUE; //Window translucency.
+		const int F_OPACITY = OP_OPAQUE; //Font translucency.
+		const int W_LAYER = 6; //window draw layer
+		const int F_LAYER = 6; //font draw layer
+		
+		const int KEY_DELAY = 6; //frames between keystrokes
+		
+		const int TYPESFX = 63;
+		
+		int sequences[(STACK_SIZE+1)*SEQUENCES];
+		
+		
+		
+		
+		int num_instruction_params(int instr)
+		{
+			switch(instr)
+			{
+				//instruction		//variables
+				case NONE: return 0;
+				case WARP: return 2;	//dmap,screen
+				case POS: return 2;		//x,y
+				case MOVEX: return 1; 	//pixels (+/-)
+				case MOVEY: return 1; 	//pixels (+/-)
+				case REFILLHP: return 0;	//aNONE
+				case REFILLMP: return 0;	//NONE
+				case REFILLCTR: return 1;	//counter
+				case MAXHP: return 1;	//amount
+				case MAXMP: return 1;	//amount
+				case MAXCTR: return 2;	//counter, amount
+				
+				case INVINCIBLE: return 1;	//(BOOL) on / off
+				case LINKITEM: return 2;	//item, (BOOL), on / off
+				case SAVE: return 0;	//item, (BOOL), on / off
+				case CREATEITEM: return 3;	//item, (BOOL), on / off
+				case CREATENPC: return 3;	//item, (BOOL), on / off
+				case PALETTE: return 2;	//item, (BOOL), on / off
+				case MONOCHROME: return 1;	//item, (BOOL), on / off
+				
+				case BOMBS: return 1;
+				case MBOMBS: return 1;
+				case ARROWS: return 1;
+				case MARROWS: return 1;
+				case KEYS: return 1;
+				case LKEYS: return 2; //level, number
+				case RUPEES: return 1;
+				case MRUPEES: return 1;
+				case LMAP: return 2;	//level map, level id, true|false
+				case LBOSSKEY: return 2;	//level bosskey, level id, true|false
+				case LTRIFORCE: return 2;	//level bosskey, level id, true|false
+				case LCOMPASS: return 2;	//level bosskey, level id, true|false
+				case BIGHITBOX: return 1;	//true|false
+				case LINKDIAGONAL: return 1;	//true|false
+				case RUNFFCSCRIPTID: return 1;
+				case SETFFSCRIPT: return 2;
+				case SETFFDATA: return 2;
+				
+				case TINT: return 3;
+				case HUE: return 4;
+				case CLEARTINT: return 0;
+				
+				case FCSET: return 2;
+				case FX: return 2;
+				case FCSET: return 2;
+				case FX: return 2;
+				case FY: return 2;
+				case FVX: return 2;
+				case FVY: return 2;
+				case FAX: return 2;
+				case FAY: return 2;
+				case FFLAGS: return 3;
+				case FTHEIGHT: return 2;
+				case FTWIDTH: return 2;
+				case FEHEIGHT: return 2;
+				case FEWIDTH: return 2;
+				case FLINK: return 2;
+				case FMISC: return 3;
+				
+				case PLAYSOUND: return 1;
+				case PLAYMIDI: return 1;
+				case DMAPMIDI: return 3;
+				
+				case SETLIFE: return 1;
+				case SETMAGIC: return 1;
+				case SETCOUNTER: return 2;
+				
+				case SAVESEQUENCE: return 1;
+				case RUNSEQUENCE: return 1;
+				case TRACE: return 0;
+		
+				default: 
+				{
+					
+					TraceError("Invalid instruction passed to stack",instr); 
+					clearbuffer(); 
+					return 0;
+				}
+			}
+		}
+		
+		void runsequence(int id)
+		{
+			int seq[STACK_SIZE+1];
+			ENQUEUED = sequences[(id*STACK_SIZE)+STACK_SIZE]-1; //the last value is the number of instructions that were enqueued.
+			if ( log_actions ) TraceError("Sequence ENQUEUED is: ",ENQUEUED);
+			//int seq_max = (id*STACK_SIZE)+STACK_SIZE;
+			for ( int q = 0; q < STACK_SIZE; ++q ) seq[q] = sequences[id*(STACK_SIZE+1)+q]; //copy the sequence set to the temp stack.
+			if ( log_actions ) TraceErrorS("Tracing sequence stack.", " ");
+			if ( log_actions ) TraceStack(seq);
+			execute(seq); //run the temp stack.
+		}
+		int savesequence(int id)
+		{
+			if ( log_actions ) TraceError("Saving sequence, ID: ",id);
+			//int seq_max = (id*STACK_SIZE)+STACK_SIZE;
+			for ( int q = 0; q < STACK_SIZE; ++q ) 
+			{
+				sequences[(id*(STACK_SIZE+1))+q] = stack[q];
+			}
+			sequences[(id*STACK_SIZE)+STACK_SIZE] = ENQUEUED;
+			ENQUEUED = 0;
+			clearstack();
+			abort();
+			return id;
+		}
+		int sizeof(int p) { return SizeOfArray(p); }
+		
+		void process()
+		{
+			if ( Input->ReadKey[WINDOW_F_KEY] ) //46+WINDOW_F_KEY] )
+			{
+				if ( log_actions ) TraceS("Enabled Debug Shell");
+				int typeval = type();
+				if ( typeval == rRAW ) //maybe type should be int with 0 being no return, 1 being enqueued, and 2 being raw?
+				{
+					if ( log_actions ) TraceS("process() evaluated type() true");
+					if ( !ENQUEUED ) 
+					{
+						int r = read(debug_buffer,false);
+						if ( r ) execute(stack);
+					}
+					else execute(stack);
+				}
+				else if ( typeval == rENQUEUED ) //maybe type should be int with 0 being no return, 1 being enqueued, and 2 being raw?
+				{
+					if ( log_actions ) TraceS("process() evaluated type() true");
+					--ENQUEUED;
+					execute(stack);
+				}
+				else 
+				{
+					if ( log_actions ) TraceErrorS("type() returned: ", "false");
+					Link->PressStart = false;
+					Link->InputStart = false;
+				}
+			}
+		}
+		
+		int type()
+		{
+			int frame = 0;
+			if ( !frame && log_actions ) TraceS("Starting type()");
+			++frame;
+			Game->TypingMode = true;
+			int key_timer; int buffer_pos = 0;
+			bool typing = true; int e;
+			//while(!Input->ReadKey[KEY_ENTER] || Input->ReadKey[KEY_ENTER_PAD])
+			while(typing)
+			{
+				//if ( key_timer <= 0 )
+				//{
+					if ( Input->ReadKey[KEY_BACKSPACE] ) //backspace
+					{
+						
+						if ( buffer_pos > 0 )
+						{
+							debug_buffer[buffer_pos] = 0;
+							--buffer_pos;
+							debug_buffer[buffer_pos] = 0;
+						}
+						key_timer = KEY_DELAY;
+						continue;
+					}
+					else if ( Input->ReadKey[KEY_DOWN] )
+					{
+						e = enqueue();
+						if ( log_actions ) TraceError("type() enqueued an instruction, queue ID: ", e);
+						
+					}
+					else if ( Input->ReadKey[KEY_ENTER] || Input->ReadKey[KEY_ENTER_PAD] ) 
+					{
+						Game->TypingMode = false;
+						//TraceNL(); TraceS("Read enter key, and buffer position is: "); Trace(buffer_pos); TraceNL();
+						if ( !buffer_pos ) 
+						{
+							if ( !ENQUEUED ) return 0; //do not execute if there are no commands
+							else return rENQUEUED;
+						}
+						else //we've typed something
+						{
+							if ( ENQUEUED ) 
+							{
+								e = enqueue(); return rENQUEUED; //also enqueue this line
+							}
+							else return rRAW;
+						}
+					}
+					else if ( Input->Key[KEY_LCONTROL] || Input->Key[KEY_RCONTROL] )
+					{
+						if ( Input->ReadKey[KEY_0] ) { savesequence(0); return 0; }
+						else if ( Input->ReadKey[KEY_1] ) { savesequence(1); return 0; }
+						else if ( Input->ReadKey[KEY_2] ) { savesequence(2); return 0; }
+						else if ( Input->ReadKey[KEY_3] ) { savesequence(3); return 0; }
+						else if ( Input->ReadKey[KEY_4] ) { savesequence(4); return 0; }
+						else if ( Input->ReadKey[KEY_5] ) { savesequence(5); return 0; }
+						else if ( Input->ReadKey[KEY_6] ) { savesequence(6); return 0; }
+						else if ( Input->ReadKey[KEY_7] ) { savesequence(7); return 0; }
+						else if ( Input->ReadKey[KEY_8] ) { savesequence(8); return 0; }
+						else if ( Input->ReadKey[KEY_9] ) { savesequence(9); return 0; }
+					}
+					else if ( EscKey() ) 
+					{
+						for ( int q = 0; q < BUFFER_LENGTH; ++q ) debug_buffer[q] = 0;
+						clearstack();
+						
+						Game->TypingMode = false;
+						return 0; //exit and do not process.
+					}
+					
+					else
+					{
+						//else normal key
+						int k; 
+						int LegalKeys[]= 
+						{
+							KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, 
+							KEY_I, KEY_J, KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, 
+							KEY_Q, KEY_R, KEY_S, KEY_T, KEY_U, KEY_V, KEY_W, KEY_X, 
+							KEY_Y, KEY_Z, KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, 
+							KEY_6, KEY_7, KEY_8, KEY_9, KEY_0_PAD, KEY_1_PAD, KEY_2_PAD, 
+							KEY_3_PAD, KEY_4_PAD, KEY_5_PAD,
+							KEY_6_PAD, KEY_7_PAD, KEY_8_PAD, KEY_9_PAD, KEY_STOP, //period
+							KEY_TILDE, 
+							KEY_MINUS, 
+							KEY_EQUALS, KEY_OPENBRACE, KEY_CLOSEBRACE,
+							KEY_COLON, KEY_QUOTE, KEY_BACKSLASH, KEY_BACKSLASH2, 
+							KEY_COMMA, 
+							KEY_SEMICOLON, KEY_SLASH, KEY_SPACE, KEY_SLASH_PAD,
+							KEY_ASTERISK, 
+							KEY_MINUS_PAD,
+							KEY_PLUS_PAD, KEY_CIRCUMFLEX, KEY_COLON2, KEY_EQUALS_PAD, KEY_STOP 
+						};
+
+						
+						for ( int kk = SizeOfArray(LegalKeys)-1; kk >= 0; --kk )
+						{
+							k = LegalKeys[kk];
+							if ( Input->ReadKey[k] )
+							{
+								//TraceS("Read a key: "); Trace(k); TraceNL();
+								debug_buffer[buffer_pos] = KeyToChar(k,(Input->Key[KEY_LSHIFT])||(Input->Key[KEY_RSHIFT])); //Warning!: Some masking may occur. :P
+								//TraceNL(); TraceS(debug_buffer); TraceNL();
+								++buffer_pos;
+								key_timer = KEY_DELAY;
+								break;
+							}
+						}
+						
+						//continue;
+					}
+				//}
+				//else { --key_timer; }
+				if ( e )
+				{
+					clearbuffer();
+					buffer_pos = 0;
+					e = 0;
+				}
+				draw();
+				Waitframe();
+			}
+			
+		}
+		
+		void draw()
+		{
+			Screen->Rectangle(W_LAYER, WINDOW_S_X, WINDOW_S_Y, WINDOW_S_X+WINDOW_W, WINDOW_S_Y+WINDOW_H, W_S_COLOUR, 1, 0,0,0,true,W_OPACITY);
+			Screen->Rectangle(W_LAYER, WINDOW_X, WINDOW_Y, WINDOW_X+WINDOW_W, WINDOW_Y+WINDOW_H, W_COLOUR, 1, 0,0,0,true,W_OPACITY);
+			Screen->DrawString(F_LAYER,WINDOW_X+CHAR_X,WINDOW_Y+CHAR_Y,FONT,F_COLOUR,F_BCOLOUR,0,debug_buffer,F_OPACITY);
+		}
+		
+		void TraceErrorS(int s, int s2)
+		{
+			TraceS(s); TraceS(": "); TraceS(s2); TraceNL();
+		}
+		
+		void TraceError(int s, float v, float v2)
+		{
+			int buf[12]; int buf2[12];
+			ftoa(buf,v);
+			ftoa(buf2,v2);
+			TraceS(s); TraceS(": "); TraceS(buf); TraceS(", "); TraceS(buf2); TraceNL();
+		}
+		
+		void TraceErrorVS(int s, float v, int s2)
+		{
+			int buf[12];
+			ftoa(buf,v);
+			TraceS(s); TraceS(": "); TraceS(buf); TraceS(", "); TraceS(s2); TraceNL();
+		}
+		
+		int match_instruction(int token)
+		{
+			if ( log_actions )  {TraceNL(); TraceS("Input token into match_instruction is: "); TraceS(token); TraceNL();}
+			
+			if ( log_actions ) {TraceNL(); TraceErrorS("match_instruction() token is: ",token); TraceNL();}
+			if ( log_actions ) {TraceNL(); TraceError("Matching string with strcmp to 'w': ", strcmp(token,"w")); TraceNL();}
+			
+			/* ONE WAY TO DO THIS. I did this with individual characters, and switches, to minimise the checks down
+			to the absolute minimum. -Z
+			
+			You could add specific instructions this way, if you wish. 
+			
+			if ( !(strcmp(token,"w") ) ) TraceErrorS("Token in match_instruction() matched to WARP. Token: ", token);
+			if ( !(strcmp(token,"W") ) ) TraceErrorS("Token in match_instruction() matched to WARP. Token: ", token);
+			if ( !(strcmp(token,"p") ) ) TraceErrorS("Token in match_instruction() matched to POS. Token: ", token);
+			if ( !(strcmp(token,"P") ) ) TraceErrorS("Token in match_instruction() matched to POS. Token: ", token);
+			if ( !(strcmp(token,"rh") ) ) TraceErrorS("Token in match_instruction() matched to REFILLHP. Token: ", token);
+			if ( !(strcmp(token,"RH") ) ) TraceErrorS("Token in match_instruction() matched to REFILLHP. Token: ", token);
+			if ( !(strcmp(token,"Rh") ) ) TraceErrorS("Token in match_instruction() matched to REFILLHP. Token: ", token);
+			if ( !(strcmp(token,"rH") ) ) TraceErrorS("Token in match_instruction() matched to REFILLHP. Token: ", token);
+			if ( !(strcmp(token,"rH") ) ) TraceErrorS("Token in match_instruction() matched to REFILLHP. Token: ", token);
+			*/
+			
+			/* Putting BRACES here causes Invalid pointer errors?! PARSER BUG!!
+			it works just find without the braces!!
+			if ( !(strcmp(token,"RunSequence") ) ) 
+			{
+				TraceErrorS("Found token RunSequence", token); // return RUNSEQUENCE; }//TraceErrorS("Token in match_instruction() matched to POS. Token: ", token);
+			}
+			*/
+				//if ( !(strcmp(token,"RunSequence") ) ) { TraceError("Found token RunSequence", " "); return RUNSEQUENCE; }
+			//if ( !(strcmp(token,"SaveSequence") ) ) return SAVESEQUENCE;
+			
+			int sc;
+			if ( !(strcmp(token,"RunSequence") ) ) sc = RUNSEQUENCE;
+			if ( sc == RUNSEQUENCE ) { TraceError("Found token RunSequence", " "); return RUNSEQUENCE;}
+			
+			switch(token[0])
+			{
+				case '%':
+				{
+					switch(token[1])
+					{
+						case 's':
+						case 'S':
+						{
+							//TraceS(token);
+							int buf[MAX_TOKEN_LENGTH]; 
+							//Trace(buf);
+							int offset = 2; 
+							for ( ; (token[offset] == ' ' || token[offset] == ':'); ++offset ) continue; //destroy leading spaces
+							
+							for ( int qq = offset; qq < MAX_TOKEN_LENGTH; ++qq )
+							{
+								buf[qq-offset] = token[qq];
+							}
+							TraceErrorS("Log",buf);
+							//TraceS(buf);
+							return TRACE;
+						}
+						case 'd':
+						case 'D':
+						{
+							int buf[MAX_TOKEN_LENGTH];
+							int offset = 2; 
+							for ( ; (token[offset] == ' ' || token[offset] == ':'); ++offset ) continue; //destroy leading spaces
+							
+							for ( int q = offset; q < MAX_TOKEN_LENGTH; ++q )
+							{
+								buf[q-offset] = token[q];
+							} 
+							int tmp = atof(buf);
+							
+							TraceError("Log",tmp);
+							
+							return TRACE;
+						}
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//A
+				case 'a':
+				case 'A':
+					return ARROWS;
+				//B
+				case 'b':
+				case 'B':
+				{
+					return BOMBS;
+					/*
+					switch(token[1])
+					{
+						case 'i':
+						case 'I':
+							return BIGHITBOX;
+						case 'o':
+						case 'O':
+							return BOMBS;
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					*/
+				}
+				case 'c':
+				case 'C':
+				{
+					switch(token[1])
+					{
+						case NULL:
+						case 'o':
+						case 'O':
+							return SETCOUNTER;
+						case 'l':
+						case 'L':
+							return CLEARTINT;
+						case 'r':
+						case 'R':
+						{
+							switch(token[2])
+							{
+								case 'i':
+								case 'I':
+								{
+									//TraceNL(); TraceS("instr() found token 'cri'"); TraceNL(); 
+									return CREATEITEM;
+								}
+								
+								case 'n':
+								case 'N':
+								{
+									//TraceNL(); TraceS("instr() found token 'cri'"); TraceNL(); 
+									return CREATENPC;
+								}
+					
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+						}
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//D
+				case 'd':
+				case 'D':
+				{
+					switch(token[1])
+					{
+						case NULL:
+						case 'i':
+						case 'I':
+							return LINKDIAGONAL;
+						case 'm':
+						case 'M': //dmap stuff
+						{
+							switch(token[2])
+							{
+								
+								case NULL: 
+								case 'm':
+								case 'M':
+									return DMAPMIDI;
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					
+							}
+						}	
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					
+					}
+					break;
+				}
+				//E
+				//F
+				case 'f':
+				case 'F':
+				{
+					switch(token[1])
+					{
+						case 'a':
+						case 'A':
+						{
+							switch(token[2])
+							{
+								case 'x':
+								case 'X':
+									return FAX;
+								case 'Y':
+								case 'y':
+									return FAY;
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					
+							}
+							break;
+							
+						}
+						case 'c':
+						case 'C':
+							return FCSET;
+						case 'd':
+						case 'D':
+							return SETFFDATA;
+						case 'e':
+						case 'E':
+						{
+							switch(token[2])
+							{
+								case 'h':
+								case 'H':
+									return FEHEIGHT;
+								case 'w':
+								case 'W':
+									return FEWIDTH;
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+							break;
+						}
+						case 'f':
+						case 'F':
+						{
+							switch(token[2])
+							{
+								case NULL:
+								case 'l':
+								case 'L':
+									return FFLAGS;
+								
+									
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+							break;
+							
+						}
+						case 'l':
+						case 'L':
+							return FLINK;
+						case 'M':
+						case 'm':
+							return FMISC;
+						case 'S':
+						case 's':
+							return SETFFSCRIPT;
+						case 't':
+						case 'T':
+						{
+							switch(token[2])
+							{
+								case 'H':
+								case 'h':
+									return FTHEIGHT;
+								case 'w':
+								case 'W':
+									return FTWIDTH;
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+							break;
+							
+						}
+						case 'v':
+						case 'V':
+						{
+							switch(token[2])
+							{
+								case 'x':
+								case 'X':
+									return FVX;
+								case 'y':
+								case 'Y':
+									return FVY;
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+							break;
+							
+						}
+						case 'x':
+						case 'X':
+							return FX;
+						case 'y':
+						case 'Y':
+							return FY;
+						
+						
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//G
+				//H
+				case 'h':
+				case 'H':
+				{
+					switch(token[1])
+					{
+						case NULL: 
+							return SETLIFE;
+						case 'b':
+						case 'B':
+							return BIGHITBOX;
+						case 'u':
+						case 'U':
+							return HUE;
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+				}
+				//I
+				case 'i':
+				case 'I':
+				{
+					switch(token[1])
+					{
+						case 'n':
+						case 'N':
+							return INVINCIBLE;
+						case 't':
+						case 'T':
+							return LINKITEM;
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//J
+				//K
+				case 'k':
+				case 'K':
+					return KEYS;
+				//L
+				case 'l':
+				case 'L':
+				{
+					switch(token[1])
+					{
+						case 'b':
+						case 'B':
+							return LBOSSKEY;
+						case 'c':
+						case 'C':
+							return LCOMPASS;
+						case 'K':
+						case 'k':
+							return LKEYS;
+						case 'M':
+						case 'm':
+							return LMAP;
+						case 't':
+						case 'T':
+							return LTRIFORCE;
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					
+				}
+				//M
+				case 'm':
+				case 'M':
+				{
+					switch(token[1])
+					{
+						case NULL:
+							return SETMAGIC;
+						case 'x':
+						case 'X':
+							//TraceNL(); TraceS("instr() found token 'mx'"); 
+							return MOVEX;
+						case 'y':
+						case 'Y':
+							//TraceNL(); TraceS("instr() found token 'my'"); 
+							return MOVEY;
+						case 'h':
+						case 'H':
+							return MAXHP;
+						case 'm':
+						case 'M':
+							return MAXMP;
+						case 'c':
+						case 'C':
+							return MAXCTR;
+						case 'o':
+						case 'O':
+							return MONOCHROME;
+						case 'b':
+						case 'B': 
+							return MBOMBS;
+						
+						case 'a':
+						case 'A':
+							return MARROWS;
+						case 'R':
+						case 'r':
+							return MRUPEES;
+						
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				
+				//P
+				case 'p':
+				case 'P':
+				{
+					switch(token[1])
+					{
+						
+						case 'a':
+						case 'A':
+							//TraceNL(); TraceS("instr() found token 'p'"); TraceNL(); 
+							return PALETTE; 
+						
+						case 'l':
+						case 'L':
+						{
+							switch(token[2])
+							{
+								case 'm':
+								case 'M':
+									return PLAYMIDI;
+								case 's':
+								case 'S':
+									return PLAYSOUND;
+								
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+						}
+						case 'o':
+						case 'O':
+							//TraceNL(); TraceS("instr() found token 'pos'"); TraceNL(); 
+							return POS; 
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//Q
+				//R
+				case 'r':
+				case 'R':
+				{
+					switch(token[1])
+					{
+						case NULL:
+							return RUPEES;
+						case 'h':
+						case 'H':
+							return REFILLHP;
+						case 'm':
+						case 'M':
+							return REFILLMP;
+						case 'c':
+						case 'C':
+							return REFILLCTR;
+						case 'U':
+						case 'u':
+						{
+							switch(token[2])
+							{
+								case NULL:
+									return RUPEES;
+								case 'n':
+								case 'N':
+									return RUNFFCSCRIPTID;
+								default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+							}
+						}
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//S
+				case 's':
+				case 'S':
+				{
+					switch(token[1])
+					{
+						case 'a':
+						case 'A':
+						case 'V':
+						case 'v':
+						{
+							//TraceNL(); TraceS("instr() found token 'save'"); 
+							return SAVE;
+						}
+						default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+					}
+					break;
+				}
+				//T
+				case 't':
+				case 'T':
+					return TINT;
+				//U
+				//V
+				//W
+				case 'w':
+				case 'W':
+					//TraceNL(); TraceS("instr() found token 'w'"); TraceNL(); 
+					return WARP;
+				
+				default: TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); abort(); return 0;
+			}
+			
+			//if ( strcmp(token,"w") == 0) { TraceNL(); TraceS("instr() found token 'w'"); return WARP; }
+			//else if ( strcmp(token,"p") == 0) { TraceNL(); TraceS("instr() found token 'p'"); return POS; }
+			//else if ( strcmp(token,"mx") == 0) { TraceNL(); TraceS("instr() found token 'mx'"); return MOVEX; }
+			//else if ( strcmp(token,"my") == 0) return MOVEY;
+			//else if ( strcmp(token,"rh") == 0) return REFILLHP;
+			//else if ( strcmp(token,"rm") == 0) return REFILLMP;
+			//else if ( strcmp(token,"rc") == 0) return REFILLCTR;
+			//else if ( strcmp(token,"mh") == 0) return MAXHP;
+			//else if ( strcmp(token,"mm") == 0) return MAXMP;
+			//else if ( strcmp(token,"mc") == 0) return MAXCTR;
+			//else if ( strcmp(token,"inv") == 0) return INVINCIBLE;
+			//else// if ( strcmp(token,"itm") == 0) return LINKITEM;
+			//else
+			//{
+			//	TraceErrorS("match_instruction(TOKEN) could not evaluate the instruction",token); 
+			//	return 0;
+			//}
+		}
+		void clearstack()
+		{
+			for ( int q = 0; q <= stack[TOP]; ++q ) stack[q] = 0; 
+			SP = 0;
+			stack[TOP] = 0;
+		}
+		int enqueue()
+		{
+			if ( log_actions ) TraceErrorS("enqueue() is pushing a string.", " ");
+			int r = read(debug_buffer,true);
+			//clearbuffer();
+			++ENQUEUED;
+			if ( log_actions ) TraceError("Enqueued is: ", ENQUEUED);
+			if ( log_actions ) TraceStack();
+			if ( log_actions ) TraceError("SP is now: ",SP);
+			return ENQUEUED;
+		}
+		void TraceStack()
+		{
+			for ( int q = stack[TOP]; q >= 0; --q )
+			TraceError("Stack register and value: ", q, stack[q]);
+		}
+		void TraceStack(int s)
+		{
+			for ( int q = s[TOP]; q >= 0; --q )
+			TraceError("Stack register and value: ", q, s[q]);
+		}
+		void abort()
+		{
+			clearbuffer();
+			Game->TypingMode = false;
+			Link->PressStart = false;
+			Link->InputStart = false;
+		}
+		void clearbuffer()
+		{
+			for ( int q = 0; q < BUFFER_LENGTH; ++q ) debug_buffer[q] = 0;
+		}
+		int read(int str, bool enqueued)
+		{
+			//debug
+			//if ( !enqueued ) {TraceNL(); TraceS("Starting read() with an initial buffer of: "); TraceS(str); TraceNL();}
+			//else {TraceNL(); TraceS("read() is running from enqueue() with an initial buffer of: "); TraceS(str); TraceNL();}
+			int token[MAX_TOKEN_LENGTH]; int input_string_pos; 
+			int e; int token_pos = 0; int current_param;
+			for ( input_string_pos = 0; input_string_pos < MAX_TOKEN_LENGTH; ++input_string_pos )
+			{
+				if (str[input_string_pos] == ',' ) { ++input_string_pos; break; }
+				if (str[input_string_pos] == NULL ) break;
+				
+				token[token_pos] = str[input_string_pos];
+				++token_pos;
+				
+				
+				//debug
+				
+				//++input_string_pos; //skip the comma now. If there are no params, we'll be on NULL.
+			}
+			//debug
+			TraceNL(); TraceS("read() token: "); TraceS(token); TraceNL();
+			
+			//put the instruction onto the stack.
+			//Right now, we are only allowing one instruction at a time.
+			//This allows for future expansion.
+			stack[SP] = match_instruction(token);
+			//TraceNL(); TraceS("SP is: "); Trace(stack[SP]); TraceNL(); 
+			int num_params = num_instruction_params(stack[SP]);
+			//TraceNL(); TraceS("Number of expected params "); Trace(num_params); TraceNL(); 
+			
+			if ( num_params )
+			{
+				if ( str[input_string_pos] == NULL ) 
+				{
+					//no params.
+					TraceErrorS("Input string is missing params. Token was", token);
+					return 0;
+				}
+			}
+			
+			++SP; //get the stack ready for the next instruction.
+			stack[TOP] = SP+1;
+			//push the variables onto the stack.
+			while ( current_param < num_params )  //repeat this until we are out of params
+				//NOT a Do loop, because some instructions have no params!
+			{
+				for ( token_pos = MAX_TOKEN_LENGTH-1; token_pos >= 0; --token_pos ) token[token_pos] = 0; //clear the token
+				
+				//copy over new token
+				token_pos = 0;
+				//TraceNL(); TraceS("read() is seeking for params."); TraceNL();
+				int temp_max = input_string_pos+MAX_TOKEN_LENGTH;
+				for ( ; input_string_pos < temp_max; ++input_string_pos )
+				{
+					if (str[input_string_pos] == ',' ) { ++input_string_pos; break; }
+					if (str[input_string_pos] == NULL ) break;
+					
+					token[token_pos] = str[input_string_pos];
+					++token_pos;
+					
+					
+					//debug
+					
+					//++input_string_pos; //skip the comma now. If there are no params, we'll be on NULL.
+				}
+				/*
+				while( str[input_string_pos] != ',' || str[input_string_pos] != NULL ) //|| current_param >= num_params ) //token terminates on a comma, or the end of the string
+				{
+					token[token_pos] = str[input_string_pos]; //store the variable into a new token
+					++token_pos;
+				}
+				*/
+				//TraceNL(); TraceS("read() is getting tval"); TraceNL();
+				int tval; //value of the param
+				//first check the boolean types:
+				//TraceNL(); TraceS("The arg token is: "); TraceS(token); TraceNL();
+				if ( !isNumber(token[0]) )
+				{
+					switch(token[0])
+					{
+						
+						case '-': tval = atof(token); break;
+						case '.': tval = atof(token); break;
+						
+						case 't':
+						case 'T':
+							tval = 1; break;
+						case 'f':
+						case 'F':
+							tval = 0; break;
+						
+						case 'l':
+						case 'L':
+						{
+							switch(token[1])
+							{
+								case 'x':
+								case 'X':
+								{
+									if ( log_actions ) TraceError("tval set to Link->X: ", Link->X);
+									tval = Link->X; break;
+								}
+								case 'y':
+								case 'Y': 
+								{
+									if ( log_actions ) TraceError("tval set to Link->Y: ", Link->Y);
+									tval = Link->Y; break;
+								}
+								default: TraceErrorS("Invalid token passed as an argument for instruction: ", token); tval = 0; break;
+							}
+							break;
+						}
+						
+						default: TraceErrorS("Invalid token passed as an argument for instruction: ", token); tval = 0; break;
+					}
+					//if ( strcmp(token,"true") ) tval = 1;
+					//else if ( strcmp(token,"T") ) tval = 1;
+					//else if ( strcmp(token,"false") ) tval = 0;
+					//else if ( strcmp(token,"F") ) tval = 0;
+					
+				}
+				else //literals
+				{
+					
+					tval = atof(token);
+					//TraceNL(); TraceS("found a literal var of: "); Trace(tval); TraceNL();
+					
+				}
+				//push the token value onto the stack
+				stack[SP] = tval; 
+			
+				//now out stack looks like:
+				
+				//: PARAMn where n is the loop iteration
+				//: PARAMn where n is the loop iteration
+				//: PARAMn where n is the loop iteration
+				//: INSTRUCTION
+				
+				++SP; //this is why the stack size must be +1 larger than the3 total number of instructions and
+				//params that it can hold. 
+				++current_param;
+				
+			} //repeat this until we are out of params
+			return 1;
+			
+		}
+		
+		//void getVarValue(int str)
+		//{
+		//	variables[VP] = atof(str);
+		//	++VP;
+		//}
+		
+		void execute(int s)
+		{
+			if ( log_actions ) 
+			{
+				TraceNL(); TraceS("Stack Trace");
+				for ( int q = stack[TOP]; q >= 0; --q )
+				{
+					TraceNL(); Trace(stack[q]);
+				}
+			}
+			
+			
+			//TraceNL(); TraceS("Running execute(stack)"); TraceNL();
+			int reg_ptr = 0; //read the stack starting here, until we reach TOP.
+			int args[MAX_ARGS];
+			//evaluate the instruction:
+			int instr; 
+			int current_arg = 0; 
+			int num_of_params = 0;
+			for ( ; ENQUEUED >= 0; --ENQUEUED )
+			{
+				current_arg = 0; //we clear this for each enqueued instruction, so that we properly place args
+						//into their positions. Otherwise, we'd be trying to store args[5] instead of [2]!
+				instr = s[reg_ptr];
+				++reg_ptr;
+				num_of_params = num_instruction_params(instr);
+				//TraceNL(); TraceS("execute(stack) expects number of args to be: "); Trace(num_of_params); TraceNL();
+				for ( ; num_of_params > 0; --num_of_params )
+				{
+					args[current_arg] = s[reg_ptr];
+					//TraceNL(); TraceS("Putting an arg on the heap. Arg value: "); Trace(args[current_arg]); TraceNL();
+					++current_arg;
+					++reg_ptr;
+					
+				}
+				
+				if ( log_actions ) 
+				{
+					TraceNL(); TraceS("execute believes that the present instruction is: "); Trace(instr); TraceNL();
+					TraceNL(); TraceS("args[0] is: "); Trace(args[0]); TraceNL();
+					TraceNL(); TraceS("args[1] is: "); Trace(args[1]); TraceNL();
+				}
+				switch(instr)
+				{
+					case NONE: 
+					TraceError("STACK INSTRUCTION IS INVALID: ", instr); 
+					Game->TypingMode = false;
+					clearbuffer();
+					break;
+					case WARP: 
+					{
+						Link->Warp(args[0],args[1]); 
+						if ( log_actions ) TraceError("Cheat System Warped Link to dmap,screen",args[0],args[1]);
+						break;
+					}
+					case POS: 
+					{
+						Link->X = args[0];
+						Link->Y = args[1];
+						if ( log_actions ) TraceError("Cheat System repositioned Link to X,Y",args[0],args[1]);
+						break;
+					}
+					
+					case MOVEX:
+					{
+						Link->X += args[0];
+						if ( log_actions ) TraceError("Cheat system moved Link on his X axis by", args[0]);
+						break;
+					}
+					case MOVEY: 
+					{
+						Link->Y += args[0];
+						if ( log_actions ) TraceError("Cheat system moved Link on his Y axis by", args[0]);
+						break;
+					}
+					case REFILLHP: 
+					{
+						Link->HP =  Link->MaxHP;
+						if ( log_actions ) TraceError("Cheat system refilled Link's HP to", Link->MaxHP);
+						break; 
+					}
+					case REFILLMP: 
+					{
+						Link->MP =  Link->MaxMP;
+						if ( log_actions ) TraceError("Cheat system refilled Link's MP to", Link->MaxHP);
+						break; 
+					}
+					case REFILLCTR: 
+					{
+						Game->Counter[args[0]] =  Game->MCounter[args[0]];
+						if ( log_actions ) TraceError("Cheat system refilled Counter", args[0]);
+						break; 
+					}
+					case MAXHP:
+					{
+						Game->MCounter[CR_LIFE] = args[0];
+						if ( log_actions ) TraceError("Cheat system set Link's Max HP to",args[0]);
+						break; 
+					}
+					case MAXMP:
+					{
+						Game->MCounter[CR_MAGIC] = args[0];
+						if ( log_actions ) TraceError("Cheat system set Link's Max MP to",args[0]);
+						break; 
+					}
+					case MAXCTR:
+					{
+						Game->Counter[args[0]] = args[1];
+						if ( log_actions ) TraceError("Cheat system refilled Counter (id, amount)",args[0],args[1]);
+						break; 
+					}
+					
+					case INVINCIBLE:
+					{
+						if ( args[0] )
+						{
+							Link->Invisible = true;
+							if ( log_actions ) TraceErrorS("Cheat system set Link's Invisibility state to ","true");
+							break; 
+						}
+						else
+						{
+							Link->Invisible = false;
+							if ( log_actions ) TraceErrorS("Cheat system set Link's Invisibility state to ","false");
+							break; 
+							
+						}
+						
+					}
+					case LINKITEM: 
+					{
+						itemdata id = Game->LoadItemData(args[0]);
+						if ( id->Keep )
+						{
+							if ( args[1] )
+							{
+								
+								Link->Item[args[0]] = true;
+								if ( log_actions ) TraceErrorS("Cheat system set Link's Inventory Item to (item, state)","true");
+								break; 
+							}
+							else
+							{
+								Link->Item[args[0]] = false;
+								if ( log_actions ) TraceErrorS("Cheat system set Link's Inventory Item to (item, state)","false");
+								break; 
+								
+							}
+						}
+						else break;
+					}
+					case SAVE:
+					{
+						TraceNL(); TraceS("Cheat system is saving the game."); 
+						clearbuffer();
+						Game->Save();
+						break;
+					}
+					case CREATEITEM:
+					{
+						if ( log_actions ) TraceError("Cheat system is creating item ID: ", args[0]);
+						if ( log_actions ) TraceError("Cheat system is creating item at X Position: ", args[1]);
+						if ( log_actions ) TraceError("Cheat system is creating item at Y Position: ", args[2]);
+						item cci = Screen->CreateItem(args[0]);
+						cci->X = args[1];
+						cci->Y = args[2];
+						break;
+					}
+					case CREATENPC:
+					{
+						if ( log_actions ) TraceError("Cheat system is creating npc ID: ", args[0]);
+						if ( log_actions ) TraceError("Cheat system is creating npc at X Position: ", args[1]);
+						if ( log_actions ) TraceError("Cheat system is creating npc at Y Position: ", args[2]);
+						npc ccn = Screen->CreateNPC(args[0]);
+						ccn->X = args[1];
+						ccn->Y = args[2];
+						break;
+					}
+					case PALETTE:
+					{
+						if ( args[0] < 0 )
+						{
+							Game->DMapPalette[Game->GetCurDMap()] = args[1];
+						}
+						else Game->DMapPalette[args[0]] = args[1];
+						break;
+					}
+					case MONOCHROME:
+					{
+						Graphics->Monochrome(args[0]); break;
+					}
+					case MBOMBS: Game->MCounter[CR_BOMBS] = args[0]; break;
+					case BOMBS: Game->Counter[CR_BOMBS] = args[0]; break;
+					case MARROWS: Game->MCounter[CR_ARROWS] = args[0]; break;
+					case ARROWS: Game->Counter[CR_ARROWS] = args[0]; break;
+					case KEYS: Game->Counter[CR_KEYS] = args[0]; break;
+					case RUPEES: Game->Counter[CR_RUPEES] = args[0]; break;
+					case MRUPEES: Game->MCounter[CR_RUPEES] = args[0]; break;
+					
+					case LKEYS: Game->LKeys[args[0]] = args[1]; break;
+					case LINKDIAGONAL: Link->Diagonal = Cond(args[0],true,false); break;
+					case BIGHITBOX: Link->BigHitbox = Cond(args[0],true,false); break;
+					
+					case LMAP: 
+					{
+						if ( args[1] ) //true
+						{	
+							Game->LItems[args[0]] |= LI_MAP;
+						}
+						else Game->LItems[args[0]] &= ~LI_MAP;
+						break;
+					}
+					case LBOSSKEY: 
+					{
+						if ( args[1] ) //true
+						{	
+							Game->LItems[args[0]] |= LI_BOSSKEY;
+						}
+						else Game->LItems[args[0]] &= ~LI_BOSSKEY;
+						break;
+					}
+					case LCOMPASS: 
+					{
+						if ( args[1] ) //true
+						{	
+							Game->LItems[args[0]] |= LI_COMPASS;
+						}
+						else Game->LItems[args[0]] &= ~LI_COMPASS;
+						break;
+					}
+					case LTRIFORCE: 
+					{
+						if ( args[1] ) //true
+						{	
+							Game->LItems[args[0]] |= LI_TRIFORCE;
+						}
+						else Game->LItems[args[0]] &= ~LI_TRIFORCE;
+						break;
+					}
+					case SETFFDATA: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Data = args[1];
+						break;
+					}
+					case SETFFSCRIPT: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Script = args[1];
+						break;
+					}
+					case RUNFFCSCRIPTID: 
+					{
+						ffc f; bool running;
+						for ( int q = 1; q < 33; ++q )
+						{	
+							f = Screen->LoadFFC(args[0]);
+							if ( !f->Script )
+							{
+								if ( !f->Data ) f->Data = INVISIBLE_COMBO;
+								f->Script = args[1];
+								running = true;
+								break;
+							}
+						}
+						if ( !running ) TraceError("Cheat system could not find a free ffc for command RUN. Try FS,id,scriptid instead.",NULL);
+						break;
+					}
+					case CLEARTINT: 
+					{
+						if ( log_actions ) TraceError("Cheat shell is clearing all Tint().",NULL);
+						Graphics->ClearTint();
+						break;
+					}
+					case TINT: 
+					{
+						if ( log_actions ) 
+						{
+							TraceError("Cheat shell is setting Tint().",NULL);
+							TraceError("Tint(red) is: ",args[0]);
+							TraceError("Tint(green) is: ",args[1]);
+							TraceError("Tint(blue) is: ",args[2]);
+						}
+						
+						Graphics->Tint(args[0],args[1],args[2]);
+						break;
+					}
+					case HUE: 
+					{
+						if ( log_actions ) 
+						{
+							TraceError("Cheat shell is setting Hue().",NULL);
+							TraceError("Hue(red) is: ",args[0]);
+							TraceError("Hue(green) is: ",args[1]);
+							TraceError("Hue(blue) is: ",args[2]);
+							if ( args[3] ) TraceErrorS("Hue(distribution) is: ","true");
+							else TraceErrorS("Hue(distribution) is: ","false");
+						}
+						
+						Graphics->MonochromeHue(args[0],args[1],args[2],Cond(args[3],true,false));
+						break;
+					}
+					case FCSET: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->CSet = args[1];
+						break;
+					}
+					case FX: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->X = args[1];
+						break;
+					}	
+					case FY: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Y = args[1];
+						break;
+					}
+					case FVX: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Vx = args[1];
+						break;
+					}	
+					case FVY: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Vy = args[1];
+						break;
+					}	
+					case FAX: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Ax = args[1];
+						break;
+					}	
+					case FAY: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Ay = args[1];
+						break;
+					}	
+					case FFLAGS: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Flags[args[1]] = (args[2]);
+						break;
+					}	
+					case FTHEIGHT: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->TileHeight = args[1];
+						break;
+					}	
+					case FTWIDTH: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->TileWidth = args[1];
+						break;
+					}	
+					case FEHEIGHT: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->EffectHeight = args[1];
+						break;
+					}	
+					case FEWIDTH: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->EffectWidth = args[1];
+						break;
+					}	
+					case FLINK: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Link = args[1];
+						break;
+					}	
+					case FMISC: 
+					{
+						ffc f = Screen->LoadFFC(args[0]);
+						f->Misc[args[1]] = args[2];
+						break;
+					}	
+					
+					case PLAYSOUND: Game->PlaySound(args[0]); break;
+					case PLAYMIDI: Game->PlayMIDI(args[0]); break;
+					case DMAPMIDI: 
+					{
+						if ( args[0] < 0 ) 
+						{ 
+							if ( log_actions ) TraceError("Cheat system is setting the DMap MIDI for the current DMap to: ",args[1]); 
+							Game->DMapMIDI[Game->GetCurDMap()] = args[1]; 
+						}
+						
+						else
+						{ 
+							if ( log_actions ) TraceError("Cheat system is setting the DMap MIDI for the DMap: ",args[0]); 
+							if ( log_actions ) TraceError("...to MIDI ID: ",args[1]); 
+							Game->DMapMIDI[args[0]] = args[1];
+						}
+						break;
+					}
+					
+					case SETLIFE: Game->Counter[CR_LIFE] = args[0]; break;
+					case SETMAGIC: Game->Counter[CR_MAGIC] = args[0]; break;
+					case SETCOUNTER: Game->Counter[args[0]] = args[1]; break;
+						
+					
+					case RUNSEQUENCE: { TraceError("Running Saved Sequence", args[0]); runsequence(args[0]); break; }
+					case SAVESEQUENCE: TraceError("Saving Sequence", savesequence(args[0])); break;
+					
+					case TRACE: break; //It's handled in match_instruction()
+					
+					default: 
+					{
+						
+						TraceError("Invalid instruction passed to stack",instr); 
+						break;
+					}
+					
+				}
+			}
+			///-----later, we'll add this: //pop everything off of the stack
+			//just wipe the stack for now, as we only support one command at this time
+			for ( int q = 0; q <= s[TOP]; ++q ) s[q] = 0; 
+			SP = 0;
+			
+			//clear the main buffer, too!
+			for ( int cl = 0; cl < BUFFER_LENGTH; ++cl ) debug_buffer[cl] = 0;
+			Game->TypingMode = false; //insurance clear
+			Link->PressStart = false;
+			Link->InputStart = false;
+			ENQUEUED = 0;
+			
+			
+		}
+		
+	}
+	
+	ffc script gh2shell
+	{
+		void run()
+		{
+			debugshell.SP = 0;
+			debugshell.clearbuffer();
+			while(1)
+			{
+				debugshell.process();
+				Waitdraw(); 
+				Waitframe();
+			}
+			
+		}
+	}
+	
+}
