@@ -7,13 +7,56 @@
 //All User Settings
 // Standard settings -----------------------------------------------------------
 
-//Combo labels
-// ("GH2SH1"); //Shadow 1x1
-// ("GH2SH2"); //Shadow 2x2
-// ("GH2Z"); //Z Axis
-// ("GH2NMES"); //Enemy config
-// ("GH2FFC"); //General FFC config
-// "GH2MISC" Misc settings
+/* Combo labels
+	The following combo labels are used to initialise the 
+	ghost v2 enironmental variables, and take the place of
+	the old, hardcoded constants. 
+	Thus they can be changed without recompiling, bt you will
+	need to call the init() command if you wish to reload them
+	in a quest after changing it, when you have an active
+	quest .sav slot. 
+
+"GH2WPN"	Weapon Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2AG"		AutoGhost Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2MISC"	Misc Value Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2FFC"	FFC Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2Z"		Z-Axis Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2NMES"	Enemy Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2SH1"	1x1 Shadow Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2SH2"	2x2 Shadow Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2BCMB"	Invisible Combo Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+"GH2BTILE"	Invisible Tile Configuration
+	Attibytes: 
+	Flags:
+	Sttributes:
+*/
 
 namespace ghost2
 {
