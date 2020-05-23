@@ -11,7 +11,7 @@
 // ("GH2SH1"); //Shadow 1x1
 // ("GH2SH2"); //Shadow 2x2
 // ("GH2Z"); //Z Axis
-// ("GH2ENEMIES"); //Enemy config
+// ("GH2NMES"); //Enemy config
 // ("GH2FFC"); //General FFC config
 
 namespace ghost2
@@ -127,7 +127,17 @@ namespace ghost2
 		void initGraphics()
 		{
 			combdata tileinfo = Game->GetCombo("GH2BTILE");
+			if (<untyped>tileinfo == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2BTILE' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
 			combdata comboinfo = Game->GetCombo("GH2BCMB");
+			if (<untyped>comboinfo == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2BCMB' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
 			config[settingBLANKTILE] = tileinfo->OriginalTile;
 			config[settingBLANKCMB] = comboinfo->ID;
 		}
@@ -136,6 +146,11 @@ namespace ghost2
 		void initFFCs()
 		{
 			combodata ffcinfo = Game->GetCombo("GH2FFC");
+			if (<untyped>ffcinfo == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2FFC' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
 			data[useffcMIN] = vbound(ffcinfo->Attribytes[fMIN], 1, 32);
 			data[useffcMAX] = vbound(ffcinfo->Attribytes[fMIN], 1, 32);
 			//useffcMIN, useffcMAX, usenpcMIN, useNPCMAX,
@@ -145,6 +160,11 @@ namespace ghost2
 		void initZAxis()
 		{
 			combodata zinfo = Game->GetCombo("GH2Z");
+			if (<untyped>zinfo == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2Z' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
 			data[settingFAKEZ] = ( (zinfo->Flags[zaxisFAKEZ]) ? 1 : 0 );
 			data[settingFAKEWPNZ] = ( (zinfo->Flags[zaxisFAKEWPNZ]) ? 1 : 0 );
 		}
@@ -152,13 +172,18 @@ namespace ghost2
 		//Sets ghost enemy behavioural properties based off of one combo.
 		void initEnemySettings()
 		{
-			combodata zinfo = Game->GetCombo("GH2ENEMIES");
-			data[settingENEMIESFLICKER] = ( (zinfo->Flags[nmesFLICKER]) ? 1 : 0 );
-			data[settingPREFERGHOSTSHADOWS] = ( (zinfo->Flags[nmesGHOSTSHADOWS]) ? 1 : 0 );
-			data[settingSPAWNSPRITE] = zinfo->Attribytes[nmesSPAWNSPRITE];
-			data[usenpcMIN] = zinfo->Attributes[nmesMIN]; 
-			data[useNPCMAX] = zinfo->Attributes[nmesMAX];
-			data[settingALWAYSUSEENEMYNAME] = zinfo->Flags[nmesUSENAME];
+			combodata nmesinfo = Game->GetCombo("GH2NMES");
+			if (<untyped>nmesinfo == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2NMES' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
+			data[settingENEMIESFLICKER] = ( (nmesinfo->Flags[nmesFLICKER]) ? 1 : 0 );
+			data[settingPREFERGHOSTSHADOWS] = ( (nmesinfo->Flags[nmesGHOSTSHADOWS]) ? 1 : 0 );
+			data[settingSPAWNSPRITE] = nmesinfo->Attribytes[nmesSPAWNSPRITE];
+			data[usenpcMIN] = nmesinfo->Attributes[nmesMIN]; 
+			data[useNPCMAX] = nmesinfo->Attributes[nmesMAX];
+			data[settingALWAYSUSEENEMYNAME] = nmesinfo->Flags[nmesUSENAME];
 			
 		}
 		
@@ -172,7 +197,17 @@ namespace ghost2
 		void initShadows()
 		{
 			combodata shadow1x1 = Game->GetCombo("GH2SH1");
+			if (<untyped>shadow1x1 == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2SH1' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
 			combodata shadow2x2 = Game->GetCombo("GH2SH2");
+			if (<untyped>shadow2x2 == -1 )
+			{
+				printf("Ghost v2.9.x Combo 'GH2SH2' is not configured.\nAborting Initialisation.\n");
+				return;
+			}
 			data[cmbcfgSHADOW1X1_TILE] = shadow1x1->Tile;
 			data[cmbcfgSHADOW2X2_TILE] = shadow2x2->Tile;
 			
