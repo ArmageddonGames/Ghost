@@ -289,11 +289,12 @@ namespace ghost3
 	    return Ghost_IFlagIsSet(ghost, GHFI_WAS_FROZEN);
 	}
 
-	void Ghost_DeathAnimation(npc ghost, int type, bool kill)
+	void Ghost_DeathAnimation(npc ghost, Ghost_DeathAnim type, bool kill)
 	{
+		ghost->Immortal = true;
 		switch(type)
 		{
-			case GHD_NONE: return;
+			case GHD_NONE: break;
 			case GHD_EXPLODE:
 				__Ghost_Explode(ghost, kill, false);
 				break;
@@ -304,6 +305,7 @@ namespace ghost3
 				__Ghost_ShrinkAway(ghost, kill);
 				break;
 		}
+		ghost->Immortal = false;
 	}
 
 	float Ghost_GetAttribute(npc ghost, int index, float defaultVal, float min, float max)

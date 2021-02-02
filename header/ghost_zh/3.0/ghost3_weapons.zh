@@ -1,23 +1,50 @@
 // ghost.zh
 // Version 3.0.0 - Alpha 2
 
-// Arguments to SetEWeaponMovement()
 namespace ghost3
 {
-	enum
+	using namespace flags;
+	namespace flags
 	{
-		EWM_SINE_WAVE = 1,
-		EWM_HOMING = 3,
-		EWM_HOMING_REAIM,
-		EWM_RANDOM,
-		EWM_RANDOM_REAIM,
-		EWM_VEER,
-		EWM_THROW = 15,
-		EWM_FALL = 19,
-		EWM_DRIFT,
-		EWM_DRIFT_WAIT = 28,
-		EWM_HOMING_P2 = 30,
-		EWM_HOMING_REAIM_P2
+		#option BINARY_32BIT on
+		// EWeapon flags
+		enum
+		{
+			EWF_UNBLOCKABLE = 		000000000001b,
+			EWF_ROTATE = 			000000000010b,
+			EWF_ROTATE_360 = 		000000000100b,
+			EWF_SHADOW = 			000000001000b,
+			EWF_FLICKER = 			000000010000b,
+			EWF_NO_COLLISION = 		000000100000b,
+			EWF_FAKE_Z = 			000001000000b,
+			EWF_ALIVEOFFSCREEN = 		000010000000b,
+			EWF_PIERCING = 			000100000000b
+		};
+
+		// Internal EWeapon flags
+		enum
+		{
+			EWFI_DEAD = 			00100000000000000000b,
+			EWFI_DEATH_EFFECT_DONE = 	01000000000000000000b,
+			EWFI_INTERNAL	= 		11100000000000000000b
+		};
+	}
+	// Arguments to SetEWeaponMovement()
+	enum EW_MovementType
+	{
+		EWM_NONE,		//0
+		EWM_SINE_WAVE,		//1
+		EWM_HOMING = 		  3,
+		EWM_HOMING_REAIM, 	//4
+		EWM_RANDOM, 		//5
+		EWM_RANDOM_REAIM, 	//6
+		EWM_VEER, 		//7
+		EWM_THROW = 		  15,
+		EWM_FALL = 		  19,
+		EWM_DRIFT,		//20
+		EWM_DRIFT_WAIT = 	  28,
+		EWM_HOMING_P2 = 	  30,
+		EWM_HOMING_REAIM_P2	//31
 	};
 
 	// Flags used by certain EWeapon movement types
@@ -30,7 +57,8 @@ namespace ghost3
 	// Arguments to SetEWeaponLifespan()
 	enum
 	{
-		EWL_TIMER = 1,
+		EWL_NONE,
+		EWL_TIMER,
 		EWL_NEAR_LINK,
 		EWL_SLOW_TO_HALT
 	};
@@ -38,20 +66,25 @@ namespace ghost3
 	// Arguments to SetEWeaponDeathEffect()
 	enum
 	{
-		EWD_VANISH = 1,
+		//0
+		EWD_NONE,
+		EWD_VANISH,
 		EWD_AIM_AT_LINK,
 		EWD_EXPLODE,
 		EWD_SBOMB_EXPLODE,
+		//5
 		EWD_4_FIREBALLS_HV,
 		EWD_4_FIREBALLS_DIAG,
 		EWD_4_FIREBALLS_RANDOM,
 		EWD_8_FIREBALLS,
 		EWD_4_FIRES_HV,
+		//10
 		EWD_4_FIRES_DIAG,
 		EWD_4_FIRES_RANDOM,
 		EWD_8_FIRES,
 		EWD_SPAWN_NPC,
 		EWD_FIRE,
+		//15
 		EWD_RUN_SCRIPT,
 		EWD_AIM_AT_P2,
 		EWD_RUN_SCRIPTLW,
@@ -64,26 +97,6 @@ namespace ghost3
 		EWD_EVEN = 1,
 		EWD_RANDOM,
 		EWD_AIMED
-	};
-
-	// EWeapon flags
-	enum
-	{
-		EWF_UNBLOCKABLE = 00000000001b,
-		EWF_ROTATE = 00000000010b,
-		EWF_ROTATE_360 = 00000000100b,
-		EWF_SHADOW = 00000001000b,
-		EWF_FLICKER = 00000010000b,
-		EWF_NO_COLLISION = 00000100000b,
-		EWF_FAKE_Z = 00001000000b
-	};
-
-	// Internal EWeapon flags
-	enum
-	{
-		__EWFI_DEAD = 00010000000b,
-		__EWFI_DEATH_EFFECT_DONE = 00100000000b,
-		__EWFI_INTERNAL	= 11110000000b
 	};
 
 	enum
@@ -103,7 +116,9 @@ namespace ghost3
 		GWI_DUMMYWPN,
 		GWI_DUMMYANGLE,
 		GWI_DUMMYSHOTS,
-		GWI_DUMMYTYPE
+		GWI_DUMMYTYPE,
+		GWI_PARTICLEWPN,
+		GWI_PARTICLETIMER
 	};
 
 	enum
@@ -116,26 +131,42 @@ namespace ghost3
 	const bool GHC_FIX_EWM_THROW = true;
 	const bool GHC_FIX_EWM_FALL = true;
 	const bool GHC_WEAPONS_HIT_PLATFORMS = true;
-
-	const int GWM_SETTINGS = 31;
-	const int GWM_PROTOTYPEUID = 30;
-	const int GWM_PROTOTYPESHOTS = 29;
-	const int GWM_PROTOTYPEMISC = 28;
-
+	
+	enum
+	{
+		GWM_PARTICLEUID = 25,
+		GWM_INITMISC2,
+		GWM_INITMISC1,
+		GWM_PROTOTYPEMISC,
+		GWM_PROTOTYPESHOTS,
+		GWM_PROTOTYPEUID,
+		GWM_SETTINGS
+	};
+	
+	enum
+	{
+		GWDM_FREQ = 25
+	};
+	
 	const int LW_GHOSTDEATH = 40;
 	const int EW_GHOSTDEATH = 40;
-
+	
+	
 	eweapon script DummyWeapon
 	{
 		void run(int movement, int movarg1, int movarg2, int lifespan, int lifearg, int death, int deatharg, int flags)
 		{
-			int args[] = {0, 0, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags};
+			int args[] = {0, 0, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, 0, 0};
 			if(movement==EWM_HOMING_REAIM || movement==EWM_RANDOM_REAIM) 
 				args[GWI_MISC2]=this->Step;
 			
 			if(movement==EWM_THROW) args[GWI_MISC2]=this->Z;
 			this->Step = 0;
 			this->Misc[GWM_SETTINGS] = args;
+			this->CollDetection = false;
+			this->X = 32;
+			this->Y = 32;
+			this->DrawXOffset = -1000;
 			while(true)
 			{
 				Waitframe();
@@ -147,8 +178,7 @@ namespace ghost3
 	{
 		void run(int movement, int movarg1, int movarg2, int lifespan, int lifearg, int death, int deatharg, int flags)
 		{
-			
-			int args[] = {this->X, this->Y, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, 0, 0, this->Misc[GWM_PROTOTYPEUID], 0, this->Misc[GWM_PROTOTYPESHOTS], 0};
+			int args[] = {this->X, this->Y, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, this->Misc[GWM_INITMISC1], this->Misc[GWM_INITMISC2], this->Misc[GWM_PROTOTYPEUID], 0, this->Misc[GWM_PROTOTYPESHOTS], 0, this->Misc[GWM_PARTICLEUID], 0};
 			args[GWI_DUMMYANGLE] = (this->Misc[GWM_PROTOTYPEMISC]%10)-6.2832;
 			args[GWI_DUMMYTYPE] = ((this->Misc[GWM_PROTOTYPEMISC]-args[GWI_DUMMYANGLE])/100)>>0;
 			switch(movement)
@@ -187,10 +217,18 @@ namespace ghost3
 			int startX=this->X;
 			int startY=this->Y;
 			bool selfPropelled=true;
-
 			// Is the weapon still active?
-			if((args[GWI_FLAGS]&__EWFI_DEAD)==0)
+			unless(get_bit(args[GWI_FLAGS], EWFI_DEAD))
 			{
+				if (this->X < 0 || this->Y < 0 || this->X > 240 || this->Y > 160)
+				{
+					if (get_bit(args[GWI_FLAGS], EWF_ALIVEOFFSCREEN))
+					{
+						this->DeadState = WDS_ALIVE;
+					}
+				}
+				else if (get_bit(args[GWI_FLAGS], EWF_PIERCING)) this->DeadState = WDS_ALIVE;
+				DoEWeaponParticles(this, args);
 				// Start movement updates
 				if(args[GWI_MOVEMENT]!=0)
 				{
@@ -269,7 +307,7 @@ namespace ghost3
 			}
 
 			// Start death effects
-			else if(args[GWI_DEATHTYPE]!=0 && (args[GWI_FLAGS]&__EWFI_DEATH_EFFECT_DONE)==0)
+			else if(args[GWI_DEATHTYPE]!=0 && get_bit(args[GWI_FLAGS], EWFI_DEATH_EFFECT_DONE)==0)
 			{
 				if(args[GWI_DEATHTYPE]<0)
 					DoEWeaponDeathPrototype(this, args);
@@ -333,13 +371,13 @@ namespace ghost3
 			
 			// Start flags
 
-			if((args[GWI_FLAGS]&EWF_SHADOW)!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_SHADOW)!=0)
 			{
 				if(this->Z>0)
 					DrawEWeaponShadow(this);
 			}
 			
-			if((args[GWI_FLAGS]&EWF_ROTATE_360)!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
 			{
 				this->DrawXOffset=1000;
 				
@@ -348,7 +386,7 @@ namespace ghost3
 					return;
 				
 				// Flickering? Nothing to do here.
-				if((args[GWI_FLAGS]&EWF_FLICKER)!=0 &&
+				if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0 &&
 				   (ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
 					return;
 				
@@ -411,20 +449,20 @@ namespace ghost3
 			}
 			else // EWF_ROTATE_360 isn't set
 			{
-				if((args[GWI_FLAGS]&EWF_FLICKER)!=0)
+				if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0)
 				{
 					// Weapons can't be made invisible; use DrawXOffset instead
-					if((ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
+					if(get_bit(Game->Time,10b/10000))
 						this->DrawXOffset=1000;
 					else
 						this->DrawXOffset=0;
 				}
 				
-				if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
+				if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 					SetEWeaponRotation(this);
 			}
 			
-			if((args[GWI_FLAGS]&EWF_FAKE_Z)!=0 || GH_FAKE_EWEAPON_Z!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_FAKE_Z)!=0 || GH_FAKE_EWEAPON_Z!=0)
 			{
 				// For some reason, DrawZOffset is also HitZOffset,
 				// so Y offsets also have to be used.
@@ -507,19 +545,10 @@ namespace ghost3
 			else // If negative, it's stopped to aim
 			{
 				args[GWI_MISC1]++;
-				if(args[GWI_MISC1]==0) // Start up again
-				{
-					args[GWI_MISC1]=45;
-					this->Angle=RadianAngle(this->X, this->Y, Link->X, Link->Y);
-					this->Step=args[GWI_MISC2];
-					SetEWeaponDir(this);
-					if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
-						SetEWeaponRotation(this);
-				}
 				// Spin in place while waiting
-				if((args[GWI_FLAGS]&EWF_ROTATE_360)!=0)
+				if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
 					this->Angle+=0.3;
-				else if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
+				else if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 				{
 					this->Angle+=0.2;
 					// Pick the direction based on the timer
@@ -534,6 +563,15 @@ namespace ghost3
 					else
 						SetEWeaponRotation(this, DIR_LEFT);
 				}
+				if(args[GWI_MISC1]==0) // Start up again
+				{
+					args[GWI_MISC1]=45;
+					this->Angle=RadianAngle(this->X, this->Y, Link->X, Link->Y);
+					this->Step=args[GWI_MISC2];
+					SetEWeaponDir(this);
+					if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+						SetEWeaponRotation(this);
+				}
 			}
 		}
 		
@@ -547,7 +585,7 @@ namespace ghost3
 		{
 			this->Angle+=Randf(2*args[GWI_MOVEARG1])-args[GWI_MOVEARG1];
 			SetEWeaponDir(this);
-			if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 				SetEWeaponRotation(this);
 			
 			// Update the timer
@@ -590,13 +628,13 @@ namespace ghost3
 					this->Angle=Rand(62832)*0.0001;
 					this->Step=args[GWI_MISC2];
 					SetEWeaponDir(this);
-					if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
+					if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 						SetEWeaponRotation(this);
 				}
 				// Spin in place while waiting
-				if((args[GWI_FLAGS]&EWF_ROTATE_360)!=0)
+				if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
 					this->Angle+=0.3;
-				else if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
+				else if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 				{
 					// Pick the direction based on the timer
 					int dir=-args[GWI_MISC1]&110b;
@@ -1191,7 +1229,7 @@ namespace ghost3
 			f=Screen->LoadFFC(ffcID);
 			
 			// Set the death effect done flag so this doesn't repeat every frame
-			args[GWI_FLAGS]|=__EWFI_DEATH_EFFECT_DONE;
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			
 			// Then run the script
 			f->Data=GH_INVISIBLE_COMBO;
@@ -1204,7 +1242,7 @@ namespace ghost3
 		void DoEWeaponDeathRunScriptLWeapon(eweapon this, int args)
 		{
 			// Set the death effect done flag so this doesn't repeat every frame
-			args[GWI_FLAGS]|=__EWFI_DEATH_EFFECT_DONE;
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			
 			lweapon f = Screen->CreateLWeapon(LW_GHOSTDEATH);
 			f->Script=args[GWI_DEATHARG];
@@ -1213,11 +1251,54 @@ namespace ghost3
 		void DoEWeaponDeathRunScriptEWeapon(eweapon this, int args)
 		{
 			// Set the death effect done flag so this doesn't repeat every frame
-			args[GWI_FLAGS]|=__EWFI_DEATH_EFFECT_DONE;
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			
 			eweapon f = Screen->CreateEWeapon(EW_GHOSTDEATH);
 			f->Script=args[GWI_DEATHARG];
 			f->InitD[0]=this->UID;
+		}
+		void DoEWeaponParticles(eweapon this, int args)
+		{
+			int id;
+			eweapon prototype;
+			int centerX;
+			int centerY;
+			
+			// Find the prototype
+			id=args[GWI_PARTICLEWPN];
+			unless(id == 0)
+			{
+				prototype=Screen->LoadEWeaponByUID(id);
+
+				// Didn't find it? Print an error, remove the weapon, and return
+				unless(prototype->isValid())
+				{
+					int error[]="GHost.zh: Failed to find prototype eweapon";
+					TraceS(error);
+					TraceNL();
+					this->DeadState=0;
+					return;
+				}
+				
+				++args[GWI_PARTICLETIMER];
+				if (args[GWI_PARTICLETIMER] % prototype->Misc[GWDM_FREQ] == 0)
+				{
+				
+					if(this->Extend==3)
+					{
+						centerX=this->X+8*this->TileWidth;
+						centerY=this->Y+8*this->TileHeight;
+					}
+					else
+					{
+						centerX=this->X+8;
+						centerY=this->Y+8;
+					}
+
+					CopyEWeapon(prototype, centerX, centerY, this->Angle);
+					Game->PlaySound(prototype->Misc[GWD_SFX]);
+				}
+			}
 		}
 	}
 
@@ -1352,9 +1433,9 @@ namespace ghost3
 		wpn->Step=0;
 		wpn->Damage=damage;
 		wpn->Script = Game->GetEWeaponScript("DummyWeapon");
-		wpn->InitD[GWD_STEP]=step;
-		wpn->InitD[GWD_SFX]=sound;
-		wpn->InitD[GWD_SPRITE]=sprite;
+		wpn->Misc[GWD_STEP]=step;
+		wpn->Misc[GWD_SFX]=sound;
+		wpn->Misc[GWD_SPRITE]=sprite;
 		
 		wpn->InitD[7]=flags;
 		
@@ -1565,18 +1646,18 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		
-		if((args[GWI_FLAGS]&EWF_SHADOW)!=0)
+		if(get_bit(args[GWI_FLAGS], EWF_SHADOW)!=0)
 		{
 			if(wpn->Z>0)
 				DrawEWeaponShadow(wpn);
 		}
 		
-		if((args[GWI_FLAGS]&EWF_ROTATE_360)!=0)
+		if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
 		{
 			wpn->DrawXOffset=1000;
 			
 			// Flickering? Nothing to do here.
-			if((args[GWI_FLAGS]&EWF_FLICKER)!=0 &&
+			if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0 &&
 			   (ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
 				return;
 			
@@ -1623,7 +1704,7 @@ namespace ghost3
 		}
 		else // EWF_ROTATE_360 isn't set
 		{
-			if((args[GWI_FLAGS]&EWF_FLICKER)!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0)
 			{
 				// Weapons can't be made invisible; use DrawXOffset instead
 				if((ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
@@ -1632,7 +1713,7 @@ namespace ghost3
 					wpn->DrawXOffset=0;
 			}
 			
-			if((args[GWI_FLAGS]&EWF_ROTATE)!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 				SetEWeaponRotation(wpn);
 		}
 	}
@@ -1667,7 +1748,7 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		
-		if((args[GWI_FLAGS]&EWF_UNBLOCKABLE)!=0)
+		if(get_bit(args[GWI_FLAGS], EWF_UNBLOCKABLE)!=0)
 			dir=UnblockableDir(dir);
 		
 		wpn->Dir=dir;
@@ -1727,7 +1808,7 @@ namespace ghost3
 	{
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
-		args[GWI_FLAGS]|=__EWFI_DEAD;
+		args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEAD);
 	}
 
 
@@ -1901,10 +1982,10 @@ namespace ghost3
 		wpn->InitD[6]=args[GWI_DEATHARG];
 		wpn->InitD[7]=args[GWI_FLAGS];
 
-		if((wpn->InitD[7]&EWF_NO_COLLISION)!=0)
+		if(get_bit(args[GWI_FLAGS], EWF_NO_COLLISION)!=0)
 			wpn->CollDetection=false;
 
-		if((wpn->InitD[7]&EWF_ROTATE)!=0)
+		if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
 			SetEWeaponRotation(wpn);
 	}
 

@@ -1,14 +1,20 @@
 // ghost.zh
-// Version 3.0.0 Alpha 1
+// Version 3.0.0 Alpha 2
 // Use this for 2.55, and later versions of ZQuest
 
 // See ghost_zh_docs/index.html for documentation.
 
-//All User Settings
-// Standard settings -----------------------------------------------------------
+#option SHORT_CIRCUIT on
+#option BINARY_32BIT off
+#option HEADER_GUARD on
+#option TRUNCATE_DIVISION_BY_LITERAL_BUG off
+#option BOOL_TRUE_RETURN_DECIMAL off
+#option TRUE_INT_SIZE on
 
 namespace ghost3
 {
+	//All User Settings
+	// Standard settings -----------------------------------------------------------
 	// Small (1x1) shadow settings
 	const int GH_SHADOW_TILE = 27400;
 	const int GH_SHADOW_CSET = 7;
@@ -39,15 +45,8 @@ namespace ghost3
 	const int GH_ENEMIES_FLICKER = 0; // 0 = No, 1 = Yes
 	const int GH_PREFER_GHOST_ZH_SHADOWS = 0; // 0 = No, 1 = Yes
 
-	// Top-left corner of a 4x4 block of blank tiles
-	const int GH_BLANK_TILE = 65456; // Min: 0, Max: 65456
-
 	// Invisible combo with no properties set
 	const int GH_INVISIBLE_COMBO = 1; // Min: 1, Max: 65279
-
-	// Always read script name and combo from the enemy's name,
-	// freeing up attributes 11 and 12
-	const int GH_ALWAYS_USE_NAME = 0;
 
 	// End standard settings -------------------------------------------------------
 
@@ -189,7 +188,7 @@ namespace ghost3
 }
 // End advanced settings -------------------------------------------------------
 
-
+#include "std.zh"
 #include "ghost_zh/3.0/ghost3_common.zh"
 #include "ghost_zh/3.0/ghost3_weapons.zh"
 #include "ghost_zh/3.0/ghost3_flags.zh"

@@ -102,4 +102,15 @@ namespace ghost3
 		// Out of range, probably -1
 		return DIR_UP;
 	}
+	
+	int get_bit(int flagset, int bits)
+	{
+		#option BINARY_32BIT on
+		return flagset & bits;
+	}
+	int set_bit(int flagset, int bits)
+	{
+		#option BINARY_32BIT on
+		return flagset | bits;
+	}
 }
