@@ -55,25 +55,6 @@ namespace ghost3
 	};
 
 
-	int ghzhData[8];
-
-	// ghzhData indices
-	enum
-	{
-		GHI_GLOBAL_FLAGS,
-		GHI_FLASH_COUNTER,
-		GHI_SHADOW_FRAME,
-		GHI_SHADOW_TIMER,
-		GHI_LARGE_SHADOW_FRAME,
-		GHI_LARGE_SHADOW_TIMER,
-		GHI_CLOCK_TIMER,
-		GHI_PREV_SCREEN
-	};
-
-	// Global flags
-	DEFINE GHGF_FLICKER = 01b;
-	DEFINE GHGF_SUSPEND = 10b;
-
 	// Get a normal direction (a DIR_ constant) from a number outside that range
 	int NormalizeDir(int dir)
 	{

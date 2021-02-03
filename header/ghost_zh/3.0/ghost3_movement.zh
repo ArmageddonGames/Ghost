@@ -10,6 +10,7 @@ namespace ghost3
 			yStep=0;
 
 		// If moving more than 8 pixels along either axis, go 8 at a time
+		
 		while(Abs(xStep)>8 || Abs(yStep)>8)
 		{
 			if(Abs(xStep)>=Abs(yStep))
@@ -110,7 +111,6 @@ namespace ghost3
 			
 			ghost->Y=edge-edgeDiff;
 		}
-		
 		if(Ghost_FlagIsSet(ghost, GHF_SET_DIRECTION) && (ghost->Misc[GH_INTERNAL][GHI_IFLAGS]&GHFI_DIR_FORCED)==0)
 		{
 			// Use 8 directions if 8-way flag is set
@@ -222,7 +222,6 @@ namespace ghost3
 		int edgeSize; // Length of that edge (ignoring imprecision)
 		float edgeStart; // X or Y at the top or left end of the leading edge
 		int numCheckPoints; // Number of points to check, excluding endpoints
-		
 		if(dir==DIR_LEFT)
 		{
 			// The edge size is hitheight, because what the fuck saffith
@@ -262,12 +261,9 @@ namespace ghost3
 			
 			for(i=1; i<=numCheckPoints; i++)
 			{
-				Screen->PutPixel(4, leadingEdge, edgeStart+i*8, 0x04, 0, 0, 0, OP_OPAQUE);
 				if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+i*8, inAir))
 					return false;
 			}
-			Screen->PutPixel(4, leadingEdge, edgeStart+imprecision, 0x04, 0, 0, 0, OP_OPAQUE);
-			Screen->PutPixel(4, leadingEdge, edgeStart+edgeSize-imprecision, 0x04, 0, 0, 0, OP_OPAQUE);
 			if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+imprecision, inAir))
 				return false;
 			if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+edgeSize-imprecision-1, inAir))
@@ -309,7 +305,6 @@ namespace ghost3
 			
 			for(i=1; i<=numCheckPoints; i++)
 			{
-				Screen->PutPixel(4, edgeStart+i*8, leadingEdge, 0x03, 0, 0, 0, OP_OPAQUE);
 				if(!Ghost_CanMovePixel(ghost, edgeStart+i*8, leadingEdge, inAir))
 					return false;
 			}
@@ -399,7 +394,6 @@ namespace ghost3
 		
 		int combo=ComboAt(x, y);
 		
-		
 		// "No enemy" flags and combos
 		if(!Ghost_FlagIsSet(ghost, GHF_IGNORE_NO_ENEMY))
 		{
@@ -437,17 +431,13 @@ namespace ghost3
 		// Restricted to water
 		if(Ghost_FlagIsSet(ghost, GHF_DEEP_WATER_ONLY))
 			return IsWater(combo);
-		
 		if(Ghost_FlagIsSet(ghost, GHF_WATER_ONLY))
 			return IsWater(combo) || Screen->ComboT[combo]==CT_SHALLOWWATER;
-		
 		// Water and pit walkability override solidity checking
 		if(IsWater(combo))
 			return Ghost_FlagIsSet(ghost, GHF_IGNORE_WATER);
-		
-		if(ghost3::IsPit(combo))
+		if(GhostIsPit(combo))
 			return Ghost_FlagIsSet(ghost, GHF_IGNORE_PITS);
-		
 		// Ignore solidity: always OK
 		if(Ghost_FlagIsSet(ghost, GHF_IGNORE_SOLIDITY))
 			return true;
@@ -456,8 +446,7 @@ namespace ghost3
 		else 
 		{
 			if(Ghost_FlagIsSet(ghost, GHF_FULL_TILE_MOVEMENT))
-			return __FullTileWalkable(x, y, Ghost_FlagIsSet(ghost, GHF_MOVE_OFFSCREEN));
-		
+				return __FullTileWalkable(x, y, Ghost_FlagIsSet(ghost, GHF_MOVE_OFFSCREEN));
 			
 			// All others: Only if the pixel is walkable
 			else

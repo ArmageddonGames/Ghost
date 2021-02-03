@@ -49,7 +49,7 @@ namespace ghost3
 			tileRatings[i]=-1;
 		}
 		// Pits
-		else if(ghost3::IsPit(i))
+		else if(GhostIsPit(i))
 		{
 		    if(!pitsOK)
 			tileRatings[i]=-1;
@@ -281,7 +281,7 @@ namespace ghost3
 
 	bool Ghost_GotHit(npc ghost)
 	{
-	    return Ghost_IFlagIsSet(ghost, GHFI_GOT_HIT);
+	    return (ghost->HitBy[6] != 0);
 	}
 
 	bool Ghost_WasFrozen(npc ghost)
@@ -371,7 +371,6 @@ namespace ghost3
 		
 		for(int j=0; j<16; ++j)
 		{
-		    Trace(j);
 		    Ghost_WaitframeLight(ghost);
 		}
 	    }
