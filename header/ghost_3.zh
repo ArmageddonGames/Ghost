@@ -149,7 +149,7 @@ namespace ghost3
 	const int __EWI_DUMMY_SPRITE   = 5;
 
 	// Returns true if the given combo should be considered a pit.
-	bool IsPit(int combo)
+	bool GhostIsPit(int combo)
 	{
 	    return IsPit(combo); // std.zh implementation by default
 	}
@@ -193,10 +193,9 @@ namespace ghost3
 #include "ghost_zh/3.0/ghost3_weapons.zh"
 #include "ghost_zh/3.0/ghost3_flags.zh"
 #include "ghost_zh/3.0/ghost3_modification.zh"
-#include "ghost_zh/3.0/ghost3_global.zh"
 #include "ghost_zh/3.0/ghost3_movement.zh"
 #include "ghost_zh/3.0/ghost3_other.zh"
 #include "ghost_zh/3.0/ghost3_update.zh"
-
+//#include "ghost_zh/3.0/ghost3_global.zh"
 
 

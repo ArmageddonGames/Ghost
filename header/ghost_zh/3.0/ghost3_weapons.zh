@@ -10,15 +10,15 @@ namespace ghost3
 		// EWeapon flags
 		enum
 		{
-			EWF_UNBLOCKABLE = 		000000000001b,
-			EWF_ROTATE = 			000000000010b,
-			EWF_ROTATE_360 = 		000000000100b,
-			EWF_SHADOW = 			000000001000b,
-			EWF_FLICKER = 			000000010000b,
-			EWF_NO_COLLISION = 		000000100000b,
-			EWF_FAKE_Z = 			000001000000b,
-			EWF_ALIVEOFFSCREEN = 		000010000000b,
-			EWF_PIERCING = 			000100000000b
+			EWF_UNBLOCKABLE = 		000000000001b, //0.0001
+			EWF_ROTATE = 			000000000010b, //0.0002
+			EWF_ROTATE_360 = 		000000000100b, //0.0004
+			EWF_SHADOW = 			000000001000b, //0.0008
+			EWF_FLICKER = 			000000010000b, //0.0016
+			EWF_NO_COLLISION = 		000000100000b, //0.0032
+			EWF_FAKE_Z = 			000001000000b, //0.0064
+			EWF_ALIVEOFFSCREEN = 		000010000000b, //0.0128
+			EWF_PIERCING = 			000100000000b  //0.0256
 		};
 
 		// Internal EWeapon flags
@@ -32,19 +32,21 @@ namespace ghost3
 	// Arguments to SetEWeaponMovement()
 	enum EW_MovementType
 	{
-		EWM_NONE,		//0
-		EWM_SINE_WAVE,		//1
-		EWM_HOMING = 		  3,
-		EWM_HOMING_REAIM, 	//4
-		EWM_RANDOM, 		//5
-		EWM_RANDOM_REAIM, 	//6
-		EWM_VEER, 		//7
-		EWM_THROW = 		  15,
-		EWM_FALL = 		  19,
-		EWM_DRIFT,		//20
-		EWM_DRIFT_WAIT = 	  28,
-		EWM_HOMING_P2 = 	  30,
-		EWM_HOMING_REAIM_P2	//31
+		EWM_NONE,               //0
+		EWM_SINE_WAVE,          //1
+		EWM_CIRCLE_WAVE,        //2
+		EWM_HOMING,             //3
+		EWM_HOMING_REAIM,       //4
+		EWM_RANDOM,             //5
+		EWM_RANDOM_REAIM,       //6
+		EWM_VEER,               //7
+		EWM_THROW =               15,
+		EWM_THROWCHASE,         //16
+		EWM_FALL =                19,
+		EWM_DRIFT,              //20
+		EWM_DRIFT_WAIT =          28,
+		EWM_HOMING_P2 =           30,
+		EWM_HOMING_REAIM_P2     //31
 	};
 
 	// Flags used by certain EWeapon movement types
@@ -113,6 +115,7 @@ namespace ghost3
 		GWI_FLAGS,
 		GWI_MISC1,
 		GWI_MISC2,
+		GWI_MISC3,
 		GWI_DUMMYWPN,
 		GWI_DUMMYANGLE,
 		GWI_DUMMYSHOTS,
@@ -123,7 +126,8 @@ namespace ghost3
 
 	enum
 	{
-		GWD_SFX = 28,
+		GWD_FREQ = 25,
+		GWD_SFX,
 		GWD_STEP,
 		GWD_SPRITE
 	};
@@ -143,11 +147,6 @@ namespace ghost3
 		GWM_SETTINGS
 	};
 	
-	enum
-	{
-		GWDM_FREQ = 25
-	};
-	
 	const int LW_GHOSTDEATH = 40;
 	const int EW_GHOSTDEATH = 40;
 	
@@ -156,7 +155,7 @@ namespace ghost3
 	{
 		void run(int movement, int movarg1, int movarg2, int lifespan, int lifearg, int death, int deatharg, int flags)
 		{
-			int args[] = {0, 0, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, 0, 0};
+			int args[] = {0, 0, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, 0, 0, 0};
 			if(movement==EWM_HOMING_REAIM || movement==EWM_RANDOM_REAIM) 
 				args[GWI_MISC2]=this->Step;
 			
@@ -178,9 +177,14 @@ namespace ghost3
 	{
 		void run(int movement, int movarg1, int movarg2, int lifespan, int lifearg, int death, int deatharg, int flags)
 		{
-			int args[] = {this->X, this->Y, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, this->Misc[GWM_INITMISC1], this->Misc[GWM_INITMISC2], this->Misc[GWM_PROTOTYPEUID], 0, this->Misc[GWM_PROTOTYPESHOTS], 0, this->Misc[GWM_PARTICLEUID], 0};
+			int args[] = {this->X, this->Y, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, this->Misc[GWM_INITMISC1], this->Misc[GWM_INITMISC2], this->Misc[GWM_INITMISC2], this->Misc[GWM_PROTOTYPEUID], 0, this->Misc[GWM_PROTOTYPESHOTS], 0, this->Misc[GWM_PARTICLEUID], 0};
 			args[GWI_DUMMYANGLE] = (this->Misc[GWM_PROTOTYPEMISC]%10)-6.2832;
 			args[GWI_DUMMYTYPE] = ((this->Misc[GWM_PROTOTYPEMISC]-args[GWI_DUMMYANGLE])/100)>>0;
+			if (this->Angular == false)
+			{
+				this->Angle = DegtoRad(DirAngle(this->Dir));
+				this->Angular = true;
+			}
 			switch(movement)
 			{
 				case EWM_HOMING_REAIM:
@@ -210,8 +214,6 @@ namespace ghost3
 		// Update a weapon's movement, lifespan, and death effects
 		void UpdateEWeapon(eweapon this, int args)
 		{
-			if((ghzhData[GHI_GLOBAL_FLAGS]&GHGF_SUSPEND)!=0)
-				return;
 			
 			// Needed for EWF_ROTATE_360
 			int startX=this->X;
@@ -232,11 +234,13 @@ namespace ghost3
 				// Start movement updates
 				if(args[GWI_MOVEMENT]!=0)
 				{
-					// Split in half to reduce checks
 					switch(args[GWI_MOVEMENT])
 					{
 						case EWM_SINE_WAVE:
 							UpdateEWMSineWave(this, args);
+							break;
+						case EWM_CIRCLE_WAVE:
+							UpdateEWMCircleWave(this, args);
 							break;
 						case EWM_HOMING:
 							UpdateEWMHoming(this, args);
@@ -259,6 +263,9 @@ namespace ghost3
 
 						case EWM_THROW:
 							UpdateEWMThrow(this, args);
+							break;
+						case EWM_THROWCHASE:
+							UpdateEWMThrowChase(this, args);
 							break;
 						case EWM_FALL:
 							UpdateEWMFall(this, args);
@@ -370,12 +377,6 @@ namespace ghost3
 			} // End death effects
 			
 			// Start flags
-
-			if(get_bit(args[GWI_FLAGS], EWF_SHADOW)!=0)
-			{
-				if(this->Z>0)
-					DrawEWeaponShadow(this);
-			}
 			
 			if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
 			{
@@ -387,7 +388,7 @@ namespace ghost3
 				
 				// Flickering? Nothing to do here.
 				if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0 &&
-				   (ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
+				   get_bit(Game->Time,10b/10000))
 					return;
 				
 				float endX;
@@ -484,6 +485,20 @@ namespace ghost3
 			args[GWI_TRUEY]+=(this->Step/100)*RadianSin(this->Angle);
 			this->X=args[GWI_TRUEX]+offset*RadianCos(this->Angle+1.5708);
 			this->Y=args[GWI_TRUEY]+offset*RadianSin(this->Angle+1.5708);
+		}
+		void UpdateEWMCircleWave(eweapon this, int args)
+		{
+			args[GWI_MISC1] += args[GWI_MOVEARG2];
+
+			//Circling weapon goes wheee
+			//Years later someone's gonna dig down here and find this comment
+			//Presumably because this function bugged out in a way I did not intend.
+			//They're gonna get very angry that I just left this comment here
+			//Instead of something helpful. :D :D :D
+			args[GWI_TRUEX]+=(this->Step/100)*RadianCos(this->Angle);
+			args[GWI_TRUEY]+=(this->Step/100)*RadianSin(this->Angle);
+			this->X=args[GWI_TRUEX]+args[GWI_MOVEARG1]*Cos(args[GWI_MISC1]);
+			this->Y=args[GWI_TRUEY]+args[GWI_MOVEARG1]*Sin(args[GWI_MISC1]);
 		}
 		void UpdateEWMHoming(eweapon this, int args)
 		{
@@ -697,7 +712,7 @@ namespace ghost3
 			// GWI_MISC1: Current jump
 			// GWI_MISC2: Current Z position
 			// GWI_MOVEARG1: Initial jump
-			// GWI_MOVEARG1: Flags
+			// GWI_MOVEARG2: Flags
 			
 			this->Jump=0; // Override engine handling of Z movement
 			
@@ -784,6 +799,102 @@ namespace ghost3
 						args[GWI_MOVEMENT]=0;
 						this->Step=0;
 					}
+				}
+			}
+		}
+		
+		void UpdateEWMThrowChase(eweapon this, int args)
+		{
+			// GWI_MISC1: Current jump
+			// GWI_MISC2: Current Z position
+			// GWI_MISC3: Stored Step
+			// GWI_MOVEARG1: Initial jump
+			// GWI_MOVEARG2: Repeat jumps
+			
+			
+			bool justinit = false;
+			
+			this->Jump=0; // Override engine handling of Z movement
+			
+			// Just thrown
+			if(args[GWI_MISC1]==0 && args[GWI_MOVEARG1]>0)
+			{
+				args[GWI_MISC1]=args[GWI_MOVEARG1];
+				args[GWI_MOVEARG1] *= -1;
+				justinit = true;
+			}
+			
+			// Fall
+			if (args[GWI_MISC2] > 0 || args[GWI_MISC1] > 0) args[GWI_MISC2]=Max(args[GWI_MISC2]+args[GWI_MISC1], 0);
+			if(GHC_FIX_EWM_THROW)
+			{
+				unless(IsSideview())
+				{
+					this->Z=args[GWI_MISC2];
+				}
+				else
+				{
+					this->Y = 176-args[GWI_MISC2];
+				}
+			}
+			else
+			{
+				this->Y = 176-args[GWI_MISC2];
+			}
+			
+			// Still in the air; adjust velocity
+			if(args[GWI_MISC2] > 0 )
+			{
+				if(GHC_WEAPONS_HIT_PLATFORMS)
+				{
+					if (!ghost3::OnSidePlatform(this->X, this->Y, 
+									this->HitXOffset,
+									this->HitYOffset, 
+									this->HitHeight,this->HitWidth)
+					)
+					{
+						args[GWI_MISC1]=Max(args[GWI_MISC1]-Game->Gravity[GR_STRENGTH], -Game->Gravity[GR_TERMINALV]);
+					}
+				}
+				else 
+				{
+					args[GWI_MISC1]=Max(args[GWI_MISC1]-Game->Gravity[GR_STRENGTH], -Game->Gravity[GR_TERMINALV]);
+				}
+			}
+			
+			// Hit the ground
+			else unless(justinit)
+			{
+				bool done=false;
+				
+				if(args[GWI_MOVEARG2] > 0)
+				{
+					if (this->Step > 0)
+					{
+						unless (args[GWI_MISC3]) args[GWI_MISC3] = this->Step;
+						this->Step = 0;
+					}
+					--args[GWI_MISC2];
+					if (args[GWI_MISC2] <= -30)
+					{
+						--args[GWI_MOVEARG2];
+						args[GWI_MISC1] = Abs(args[GWI_MOVEARG1]);
+						args[GWI_MISC2] = 0;
+						this->Angle = DegtoRad(Angle(this->X, this->Y, Hero->X, Hero->Y));
+						this->Step = args[GWI_MISC3];
+						args[GWI_MISC3] = 0;
+					}
+				}
+				// Don't bounce
+				else
+				{
+					done=true;
+				}
+				// Movement ended; stop or die?
+				if(done)
+				{
+					this->Z=0;
+					KillEWeapon(this);
 				}
 			}
 		}
@@ -1281,7 +1392,7 @@ namespace ghost3
 				}
 				
 				++args[GWI_PARTICLETIMER];
-				if (args[GWI_PARTICLETIMER] % prototype->Misc[GWDM_FREQ] == 0)
+				if (args[GWI_PARTICLETIMER] % prototype->Misc[GWD_FREQ] == 0)
 				{
 				
 					if(this->Extend==3)
@@ -1295,7 +1406,7 @@ namespace ghost3
 						centerY=this->Y+8;
 					}
 
-					CopyEWeapon(prototype, centerX, centerY, this->Angle);
+					CopyEWeapon(prototype, centerX, centerY, this->Angle, this->Z);
 					Game->PlaySound(prototype->Misc[GWD_SFX]);
 				}
 			}
@@ -1646,19 +1757,13 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		
-		if(get_bit(args[GWI_FLAGS], EWF_SHADOW)!=0)
-		{
-			if(wpn->Z>0)
-				DrawEWeaponShadow(wpn);
-		}
-		
 		if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
 		{
 			wpn->DrawXOffset=1000;
 			
 			// Flickering? Nothing to do here.
 			if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0 &&
-			   (ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
+			   get_bit(Game->Time,10b/10000))
 				return;
 			
 			// This works a little differently than in UpdateEWeapon(). Since
@@ -1707,7 +1812,7 @@ namespace ghost3
 			if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0)
 			{
 				// Weapons can't be made invisible; use DrawXOffset instead
-				if((ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
+				if(get_bit(Game->Time,10b/10000))
 					wpn->DrawXOffset=1000;
 				else
 					wpn->DrawXOffset=0;
@@ -1809,24 +1914,6 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEAD);
-	}
-
-
-	// Draw a shadow under an eweapon
-	void DrawEWeaponShadow(eweapon wpn)
-	{
-		if(GH_SHADOW_FLICKER>0 && (ghzhData[GHI_GLOBAL_FLAGS]&GHGF_FLICKER)!=0)
-			return;
-		
-		int x=CenterX(wpn)-8+wpn->DrawXOffset;
-		int y=wpn->Y+(wpn->TileHeight-1)*16+wpn->DrawYOffset-wpn->DrawZOffset;
-
-		if(GH_SHADOW_TRANSLUCENT>0)
-			Screen->DrawTile(1, x, y, GH_SHADOW_TILE+ghzhData[GHI_SHADOW_FRAME],
-							 1, 1, GH_SHADOW_CSET, -1, -1, 0, 0, 0, 0, true, 64);
-		else
-			Screen->DrawTile(1, x, y, GH_SHADOW_TILE+ghzhData[GHI_SHADOW_FRAME],
-							 1, 1, GH_SHADOW_CSET, -1, -1, 0, 0, 0, 0, true, 128);
 	}
 
 
@@ -1933,6 +2020,65 @@ namespace ghost3
 
 
 	// Make a copy of the given eweapon, which should be a dummy
+	void CopyEWeapon(eweapon prototype, int centerX, int centerY, float angle, int centerZ)
+	{
+		eweapon wpn=Screen->CreateEWeapon(prototype->ID);
+		if(prototype->Misc[GWD_SPRITE]>0)
+			wpn->UseSprite(prototype->Misc[GWD_SPRITE]);
+
+		if(prototype->Extend==3)
+		{
+			wpn->Extend=3;
+			wpn->TileWidth=prototype->TileWidth;
+			wpn->TileHeight=prototype->TileHeight;
+			wpn->HitWidth=16*prototype->TileWidth;
+			wpn->HitHeight=16*prototype->TileHeight;
+			wpn->X=centerX-8*wpn->TileWidth;
+			wpn->Y=centerY-8*wpn->TileWidth;
+		}
+		else
+		{
+			wpn->X=centerX-8;
+			wpn->Y=centerY-8;
+		}
+		
+		wpn->Z = centerZ;
+
+		wpn->Behind = prototype->Behind;
+		wpn->Step=prototype->Misc[GWD_STEP];
+		wpn->Damage=prototype->Damage;
+		wpn->Angular=true;
+		wpn->Angle=angle;
+		SetEWeaponDir(wpn);
+		
+		int args = prototype->Misc[GWM_SETTINGS];
+		
+		unless(args) return;
+		
+		wpn->Script = Game->GetEWeaponScript("GhostWeapon");
+		
+		wpn->InitD[0]=args[GWI_MOVEMENT];
+		wpn->InitD[2]=args[GWI_MOVEARG2];
+
+		// Special case for thrown weapons with automatic velocity
+		if(args[GWI_MOVEMENT]==EWM_THROW && args[GWI_MOVEARG1]==-1)
+			wpn->InitD[1]=GetEWeaponThrowheight(wpn);
+		else
+			wpn->InitD[1]=args[GWI_MOVEARG1];
+
+		wpn->InitD[3]=args[GWI_LIFESPAN];
+		wpn->InitD[4]=args[GWI_LIFEARG];
+		wpn->InitD[5]=args[GWI_DEATHTYPE];
+		wpn->InitD[6]=args[GWI_DEATHARG];
+		wpn->InitD[7]=args[GWI_FLAGS];
+
+		if(get_bit(args[GWI_FLAGS], EWF_NO_COLLISION)!=0)
+			wpn->CollDetection=false;
+
+		if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+			SetEWeaponRotation(wpn);
+	}
+	
 	void CopyEWeapon(eweapon prototype, int centerX, int centerY, float angle)
 	{
 		eweapon wpn=Screen->CreateEWeapon(prototype->ID);
@@ -1955,6 +2101,7 @@ namespace ghost3
 			wpn->Y=centerY-8;
 		}
 
+		wpn->Behind = prototype->Behind;
 		wpn->Step=prototype->Misc[GWD_STEP];
 		wpn->Damage=prototype->Damage;
 		wpn->Angular=true;
@@ -2012,5 +2159,58 @@ namespace ghost3
 		
 		// Should never get here
 		return dir;
+	}
+	
+	bool IsInitialized(eweapon e)
+	{
+		return (e->Misc[GWM_SETTINGS] > 0);
+	}
+	
+	int GetSettingsArray(eweapon e)
+	{
+		if (IsInitialized(e))
+			return e->Misc[GWM_SETTINGS];
+			
+		return -1;
+	}
+	
+	void SetEWeaponSparkleFrequency(eweapon e, int frequency)
+	{
+		if (IsDummyEWeapon(e))
+		{
+			e->Misc[GWD_FREQ] = frequency;
+			return;
+		}
+		if (IsGHostZHEWeapon(e))
+		{
+			if (IsInitialized(e))
+			{
+				int arr = GetSettingsArray(e);
+				int uid = arr[GWI_PARTICLEWPN];
+				eweapon particle = Screen->LoadEWeaponByUID(uid);
+				particle->Misc[GWD_FREQ] = frequency;
+			}
+			else
+			{
+				int uid = e->Misc[GWM_PARTICLEUID];
+				eweapon particle = Screen->LoadEWeaponByUID(uid);
+				particle->Misc[GWD_FREQ] = frequency;
+			}
+		}
+	}
+	void SetEWeaponSparkle(eweapon e, eweapon dummy)
+	{
+		if (IsGHostZHEWeapon(e) && IsDummyEWeapon(dummy))
+		{
+			if (IsInitialized(e))
+			{
+				int arr = GetSettingsArray(e);
+				arr[GWI_PARTICLEWPN] = dummy->UID;
+			}
+			else
+			{
+				e->Misc[GWM_PARTICLEUID] = dummy->UID;
+			}
+		}
 	}
 }
