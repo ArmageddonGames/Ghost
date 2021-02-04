@@ -148,12 +148,6 @@ namespace ghost3
 	const int __EWI_DUMMY_STEP     = 4;
 	const int __EWI_DUMMY_SPRITE   = 5;
 
-	// Returns true if the given combo should be considered a pit.
-	bool GhostIsPit(int combo)
-	{
-	    return IsPit(combo); // std.zh implementation by default
-	}
-
 	// Returns true if enemies are visible on screens with the
 	// "All Enemies Are Invisible" flag enabled
 	bool HaveAmulet()
@@ -172,14 +166,12 @@ namespace ghost3
 	//Used to determine if a weapon hit a platform in sideview.
 	bool OnSidePlatform(int x, int y, int xOff, int yOff, int h, int w) 
 	{
+		unless (IsSideview()) return false;
 		for(int i = 0; i <= (w-1); ++i)
 		{
 			if( Screen->isSolid( (x + xOff + i), (y + yOff) + h ) )
 			{
-				if( (Screen->Flags[SF_ROOMTYPE]&4) )
-				{
-					return true;
-				}
+				return true;
 			}
 		   
 		}

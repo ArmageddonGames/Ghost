@@ -49,7 +49,7 @@ namespace ghost3
 			tileRatings[i]=-1;
 		}
 		// Pits
-		else if(GhostIsPit(i))
+		else if(IsPit(i))
 		{
 		    if(!pitsOK)
 			tileRatings[i]=-1;
