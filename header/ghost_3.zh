@@ -177,6 +177,17 @@ namespace ghost3
 		}
 		return false;
 	}
+	
+	combodata GetInvisibleCombo()
+	{
+		combodata cd = Game->GetCombo("INVISIBLE");
+		if(cd) return cd;
+		else 
+		{
+			printf("No combo has the label INVISIBLE.\n");
+			return NULL;
+		}
+	}
 }
 // End advanced settings -------------------------------------------------------
 
