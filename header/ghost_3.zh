@@ -204,8 +204,8 @@ namespace ghost3
 	
 	combodata GetGhostSettingsCombo()
 	{
-		combodata cd = Game->GetCombo("GHOST");
-		if(cd) return cd;
+		int cd = Game->GetCombo("GHOST");
+		if(cd) return Game->LoadComboData(cd);
 		else 
 		{
 			printf("No combo has the label GHOST.\n");
@@ -227,7 +227,7 @@ namespace ghost3
 	//Combos	
 	const int GHV_SETTINGS_COMBO 		= 1; //Also blank
 	const int GHV_BLANK_COMBO 		= 1; 
-	const int GHV_SETTING_COMBO_ID 		= 2; //Also blank
+	const int GHV_SETTINGS_COMBO_ID 		= 2; //Also blank
 	const int GHV_BLANK_COMBO_ID 		= 2;
 	const int GHV_BLANK_TILE 		= 3;
 	//Shadows
@@ -241,20 +241,22 @@ namespace ghost3
 	const int GHV_LARGE_SHADOW_CSET 	= 11;
 	const int GHV_LARGE_SHADOW_FRAMES 	= 12;
 	const int GHV_LARGE_SHADOW_ANIM_SPEED 	= 13;
-	const int GHV_LARGE_SHADOW_MIN_WIDTH 	= 14;
-	const int GHV_LARGE_SHADOW_MIN_HEIGHT 	= 15;
-	const int GHV_MIN_FFC		 	= 16;
-	const int GHV_MAX_FFC		 	= 17;
-	const int GHV_SPAWN_SPRITE		 	= 18;
-	const int GHV_FAKE_Z		 	= 19;
-	const int GHV_ENEMIES_FLICKER		 	= 20;
-	const int GHV_PREFER_GHOST_ZH_SHADOWS		 	= 21;
-	const int GHV_FIX_255_ANONE		 	= 22;
-	const int GHV_WEAPONS_HIT_PLATFORMS		 	= 23;
+	const int GHV_LARGE_SHADOW_TRANSLUCENT 	= 14;
+	const int GHV_LARGE_SHADOW_FLICKER 		= 15;
+	const int GHV_LARGE_SHADOW_MIN_WIDTH 	= 16;
+	const int GHV_LARGE_SHADOW_MIN_HEIGHT 	= 17;
+	const int GHV_MIN_FFC		 	= 18;
+	const int GHV_MAX_FFC		 	= 19;
+	const int GHV_SPAWN_SPRITE		 	= 20;
+	const int GHV_FAKE_Z		 	= 21;
+	const int GHV_ENEMIES_FLICKER		 	= 22;
+	const int GHV_PREFER_GHOST_ZH_SHADOWS		 	= 23;
+	const int GHV_FIX_255_ANONE		 	= 24;
+	const int GHV_WEAPONS_HIT_PLATFORMS		 	= 25;
 	
 	bool initialised()
 	{
-		return (Game->Ghost[GHI_INITIALISED]);
+		return (Game->Ghost[GHV_INITIALISED]);
 	}
 	void init()
 	{
@@ -272,7 +274,7 @@ namespace ghost3
 	}
 	int RunSetupCombo()
 	{
-		combodata cd = Game->GetCombo("GHOST");
+		combodata cd = Game->LoadComboData(Game->GetCombo("GHOST"));
 		
 		unless(cd->ID > 0) 
 		{
@@ -286,18 +288,18 @@ namespace ghost3
 		Game->Ghost[GHV_MIN_FFC] = cd->Attribytes[0];
 		Game->Ghost[GHV_MAX_FFC] = cd->Attribytes[1];
 		Game->Ghost[GHV_SPAWN_SPRITE] = cd->Attribytes[2];
-		Game->Ghost[GHV_FAKE_Z] = (cd->Flags&0x1) ? 1 : 0;
-		Game->Ghost[GHV_ENEMIES_FLICKER] = (cd->Flags&0x2) ? 1 : 0;
-		Game->Ghost[GHV_PREFER_GHOST_ZH_SHADOWS] = (cd->Flags&0x4) ? 1 : 0;
-		Game->Ghost[GHV_FIX_255_ANONE] = (cd->Flags&0x8) ? 1 : 0;
-		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->Flags&0x10) ? 1 : 0;
+		Game->Ghost[GHV_FAKE_Z] = (cd->UserFlags&0x1) ? 1 : 0;
+		Game->Ghost[GHV_ENEMIES_FLICKER] = (cd->UserFlags&0x2) ? 1 : 0;
+		Game->Ghost[GHV_PREFER_GHOST_ZH_SHADOWS] = (cd->UserFlags&0x4) ? 1 : 0;
+		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 1 : 0;
+		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 1 : 0;
 		return 1;
 	}
 	int SetupShadowTiles()
 	{
 		combodata shad1, shad2;
-		shad1 = Game->GetCombo("GHSHAD1");
-		shad2 = Game->GetCombo("GHSHAD2");
+		shad1 = Game->LoadComboData(Game->GetCombo("GHSHAD1"));
+		shad2 = Game->LoadComboData(Game->GetCombo("GHSHAD2"));
 		unless(shad1->ID > 0) 
 		{
 			printf("No combo has the label GHSHAD1.\n");

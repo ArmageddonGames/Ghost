@@ -147,6 +147,41 @@ npc script G3_Example4
 	}
 }
 
+@Author("Dimi")
+npc script G3_Example5
+{
+	using namespace ghost3;
+	using namespace ghost3::flags;
+	void run()
+	{
+		int internal[8];
+		GhostInit(this, internal);
+		int shotcounter;
+		int storex = this->X;
+		int storey = this->Y;
+		while(true)
+		{
+			this->HaltingWalk({this->Rate, this->Homing, 0, this->Haltrate, 60});
+			if (storex == this->X && storey == this->Y) ++shotcounter;
+			else shotcounter = 0;
+			storex = this->X;
+			storey = this->Y;
+			if (this-> Halt == 20)
+			{
+				eweapon e = FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, 0, this->Attributes[6], this->WeaponDamage, this->WeaponSprite, -1, 0);
+				int flags = EWMF_DIE;
+				if (this->Attributes[9] == 1 || this->Attributes[9] == 3) flags |= EWMF_SPEEDBOUNCE;
+				if (this->Attributes[9] == 2 || this->Attributes[9] == 3) flags |= EWMF_SLOWBOUNCE;
+				if (this->Attributes[8] == 1) flags |= EWMF_SPEEDSCALE;
+				if (this->Attributes[8] == 2) flags |= EWMF_SLOWSCALE;
+				SetEWeaponMovement(e, EWM_WALLBOUNCE, this->Attributes[7], flags);
+				SetEWeaponDeathEffect(e, EWD_SBOMB_EXPLODE, this->WeaponDamage*2);
+			}
+			Ghost_Waitframe(this, GHD_NONE, true);
+		}
+	}
+}
+
 int GetSlideTime(npc n)
 {
 	return (n->SlideClock&0xFF);

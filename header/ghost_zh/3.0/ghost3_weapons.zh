@@ -40,6 +40,7 @@ namespace ghost3
 		EWM_RANDOM,             //5
 		EWM_RANDOM_REAIM,       //6
 		EWM_VEER,               //7
+		EWM_WALLBOUNCE,         //8
 		EWM_THROW =               15,
 		EWM_THROWCHASE,         //16
 		EWM_FALL =                19,
@@ -52,8 +53,13 @@ namespace ghost3
 	// Flags used by certain EWeapon movement types
 	enum
 	{
-		EWMF_DIE = 01b,
-		EWMF_BOUNCE = 10b
+		EWMF_DIE =         000001b,
+		EWMF_BOUNCE =      000010b,
+		EWMF_KEEPMOVING =  000010b,
+		EWMF_SLOWBOUNCE =  000100b,
+		EWMF_SPEEDBOUNCE = 001000b,
+		EWMF_SPEEDSCALE =  010000b,
+		EWMF_SLOWSCALE =   100000b
 	};
 
 	// Arguments to SetEWeaponLifespan()
@@ -260,6 +266,13 @@ namespace ghost3
 							UpdateEWMVeer(this, args);
 							selfPropelled=false;
 							break;
+							
+						case EWM_WALLBOUNCE:
+							startX=args[GWI_TRUEX];
+							startY=args[GWI_TRUEY];
+							UpdateEWMWallBounce(this, args);
+							selfPropelled=false;
+							break;
 
 						case EWM_THROW:
 							UpdateEWMThrow(this, args);
@@ -444,8 +457,10 @@ namespace ghost3
 				
 				// Currently, these are always drawn on layer 4.
 				// That should probably be changed...
-				Screen->DrawTile(4, endX, endY-this->Z, this->Tile,
-				  this->TileWidth, this->TileHeight, this->CSet, -1, -1,
+				int scalexoffset = (this->TileWidth - (this->TileWidth*this->Scale))/2;
+				int scaleyoffset = (this->TileHeight - (this->TileHeight*this->Scale))/2;
+				Screen->DrawTile(4, endX+scalexoffset, endY-this->Z+scaleyoffset, this->Tile,
+				  this->TileWidth, this->TileHeight, this->CSet, this->TileWidth*this->Scale, this->TileHeight*this->Scale,
 				  endX, endY-this->Z, angle, flip, true, OP_OPAQUE);
 			}
 			else // EWF_ROTATE_360 isn't set
@@ -705,6 +720,263 @@ namespace ghost3
 			this->X=args[GWI_TRUEX];
 			this->Y=args[GWI_TRUEY];
 			args[GWI_MISC1]+=args[GWI_MOVEARG2];
+		}
+		
+		void UpdateEWMWallBounce(eweapon this, int args)
+		{
+			// Override regular movement
+			int xpush = (this->Step/100)*RadianCos(this->Angle);
+			int ypush = (this->Step/100)*RadianSin(this->Angle);
+			int xpush3 = xpush;
+			int ypush3 = ypush;
+			int signx = Sign(xpush);
+			int signy = Sign(ypush);
+			//args[GWI_TRUEX]+=(this->Step/100)*RadianCos(this->Angle);
+			//args[GWI_TRUEY]+=(this->Step/100)*RadianSin(this->Angle);
+			while (xpush != 0 || ypush != 0)
+			{
+				if (Sign(xpush)) signx = Sign(xpush);
+				if (Sign(ypush)) signy = Sign(ypush);
+				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, signx, 0), 1, false)) 
+				{
+					unless (args[GWI_MOVEARG1] == 0) 
+					{
+						signx *= -1;
+						if (args[GWI_MOVEARG2]&EWMF_SPEEDBOUNCE) 
+						{
+							if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE) 
+							{
+								this->Step *= 1.25;
+								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth *= 1.125;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight *= 1.125;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale *= 1.125;
+								}
+								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth /= 1.125;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight /= 1.125;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale /= 1.125;
+								}
+							}
+							else 
+							{
+								this->Step *= 1.5;
+								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth *= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight *= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale *= 1.25;
+								}
+								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth /= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight /= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale /= 1.25;
+								}
+							}
+						}
+						else if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE)
+						{
+							if (this->Step <= 75 && (args[GWI_MOVEARG2]&EWMF_DIE) && args[GWI_MOVEARG1] < 0) KillEWeapon(this);
+							else 
+							{
+								this->Step /= 1.5;
+								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth /= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight /= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale /= 1.25;
+								}
+								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth *= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight *= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale *= 1.25;
+								}
+							}
+						}
+						if (args[GWI_MOVEARG1] > 0) --args[GWI_MOVEARG1];
+					}
+					else
+					{
+						if(args[GWI_MOVEARG2]&EWMF_DIE) KillEWeapon(this);
+						unless(args[GWI_MOVEARG2]&EWMF_KEEPMOVING)
+						{
+							this->Step=0;
+						}
+						args[GWI_MOVEMENT]=0;
+					}
+				}
+				int xpush2 = signx*Min(1, Abs(xpush));
+				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, signx, 0), 1, false)) args[GWI_TRUEX]+=xpush2;
+				
+				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, 0, signy), 1, false)) 
+				{
+					unless (args[GWI_MOVEARG1] == 0) 
+					{
+						signy *= -1;
+						if (args[GWI_MOVEARG2]&EWMF_SPEEDBOUNCE) 
+						{
+							if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE) 
+							{
+								this->Step *= 1.25;
+								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth *= 1.125;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight *= 1.125;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale *= 1.125;
+								}
+								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth /= 1.125;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight /= 1.125;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale /= 1.125;
+								}
+							}
+							else 
+							{
+								this->Step *= 1.5;
+								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth *= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight *= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale *= 1.25;
+								}
+								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth /= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight /= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale /= 1.25;
+								}
+							}
+						}
+						else if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE)
+						{
+							if (this->Step <= 75 && (args[GWI_MOVEARG2]&EWMF_DIE) && args[GWI_MOVEARG1] < 0) KillEWeapon(this);
+							else 
+							{
+								this->Step /= 1.5;
+								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth /= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight /= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale /= 1.25;
+								}
+								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
+								{
+									int diff = this->HitWidth;
+									this->HitWidth *= 1.25;
+									this->HitXOffset -= (this->HitWidth-diff)/2;
+									this->DrawXOffset -= (this->HitWidth-diff)/2;
+									diff = this->HitHeight;
+									this->HitHeight *= 1.25;
+									this->HitYOffset -= (this->HitHeight-diff)/2;
+									this->DrawYOffset -= (this->HitHeight-diff)/2;
+									if (this->Scale == 0) this->Scale = 1;
+									this->Scale *= 1.25;
+								}
+							}
+						}
+						if (args[GWI_MOVEARG1] > 0) --args[GWI_MOVEARG1];
+					}
+					else
+					{
+						if(args[GWI_MOVEARG2]&EWMF_DIE) KillEWeapon(this);
+						unless(args[GWI_MOVEARG2]&EWMF_KEEPMOVING)
+						{
+							this->Step=0;
+						}
+						args[GWI_MOVEMENT]=0;
+					}
+				}
+				int ypush2 = signy*Min(1, Abs(ypush));
+				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, 0, signy), 1, false)) args[GWI_TRUEY]+=ypush2;
+				ypush = signy*(Abs(ypush)-Abs(ypush2));
+				xpush = signx*(Abs(xpush)-Abs(xpush2));
+			}
+			Trace(this->Angle);
+			this->Angle = RadianAngle(0, 0, (signx * Abs(xpush3)), (signy * Abs(ypush3)));
+			this->X=args[GWI_TRUEX];
+			this->Y=args[GWI_TRUEY];
 		}
 
 		void UpdateEWMThrow(eweapon this, int args)
@@ -1220,7 +1492,7 @@ namespace ghost3
 		// Some of these could probably be combined...
 		void DoEWeaponDeathExplode(eweapon this, int args)
 		{
-			FireNonAngularEWeapon(EW_BOMBBLAST, CenterX(this)-8, CenterY(this)-8, this->Dir, 0, args[GWI_DEATHARG], -1, 0, 0);
+			eweapon bomb = FireNonAngularEWeapon(EW_BOMBBLAST, CenterX(this)-8, CenterY(this)-8, this->Dir, 0, args[GWI_DEATHARG], -1, 0, 0);
 			this->DeadState=0;
 		}
 
