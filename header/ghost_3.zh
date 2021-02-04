@@ -13,6 +13,9 @@
 
 namespace ghost3
 {
+	
+//! BEGIN: I have copied these to Game->Ghost, these constants need to be updated to use Game->Ghost calls.
+	
 	//All User Settings
 	// Standard settings -----------------------------------------------------------
 	// Small (1x1) shadow settings
@@ -50,9 +53,25 @@ namespace ghost3
 
 	// End standard settings -------------------------------------------------------
 
-
+//! END
 
 	// Advanced settings -----------------------------------------------------------
+
+//! BEGIN: Moving these two to tileset init
+
+	// For ZC Versions where Animation Style (None) does not set ->Tile, enable this. 
+	const int GH_FIX_255_ANONE = 1;
+
+	// If set to 1, weapons in sideview will die when they hit
+	// a solid sideview platform.
+	// Set to 0 if this causes bugs in legacy quests or scripts.
+	const int GH_WEAPONS_HIT_PLATFORMS = 1;
+	
+//! END
+
+
+//! BEGIN: These all seem to be autoghost. We need to decide if any of these will still be used
+//       and if so, move them onto settings combos. 
 
 	// AutoGhost will read a script name from the enemy's name if attribute 12
 	// is set to this. Must be a negative number.
@@ -74,6 +93,11 @@ namespace ghost3
 	// If enabled, the FFC will be invisible, and Screen->DrawCombo will be used
 	// to display enemies.
 	const int GH_USE_DRAWCOMBO = 1;
+	
+// ! END
+
+
+//! BEGIN: These seem to be things that should be handled in script. 
 
 	// Enemies flash or flicker for this many frames when hit. This does not
 	// affect enemies that use the invisible combo.
@@ -92,26 +116,18 @@ namespace ghost3
 	// The imprecision setting used when a movement function is called internally
 	// (except for walking functions).
 	const int GH_DEFAULT_IMPRECISION = 2;
+	
+// ! END
+	
+	
+	
+//! BEGIN: These BUGFIX settings should be removed and be the default behaviour in 3.0.
 
 	// Whether to set ffc->Link=0 when cleaning up an FFC. In 2.50.3 RC1 and before,
 	// this does not work due to a bug. Set this to 1 only if you're using a newer
 	// ZC version than 2.50.3 RC1.
 	const int GH_CLEAR_FFC_LINK = 0;
-
-	// For ZC Versions where Animation Style (None) does not set ->Tile, enable this. 
-	const int GH_FIX_255_ANONE = 1;
-
-	// Set to 1 to make ghost ffcs Ethereal so that they cannot block
-	// other combo types/flags on the screen.
-	// Added in 2.8.12. The prior versions did not have this.
-	// Set to 0 if this causes bugs in legacy quests or scripts.
-	const int GH_ETHEREAL = 1;
-
-	// If set to 1, weapons in sideview will die when they hit
-	// a solid sideview platform.
-	// Set to 0 if this causes bugs in legacy quests or scripts.
-	const int GH_WEAPONS_HIT_PLATFORMS = 1;
-
+	
 	// If set to 1, this will patch bugs where falling weapons can
 	// be inappropriately destroyed because of their position.
 	// Set to 0 if this causes bugs in legacy quests or scripts.
@@ -121,6 +137,14 @@ namespace ghost3
 	// be inappropriately destroyed because of their position.
 	// Set to 0 if this causes bugs in legacy quests or scripts.
 	const int GH_FIX_EWM_THROW = 1;
+	
+	// Set to 1 to make ghost ffcs Ethereal so that they cannot block
+	// other combo types/flags on the screen.
+	// Added in 2.8.12. The prior versions did not have this.
+	// Set to 0 if this causes bugs in legacy quests or scripts.
+	const int GH_ETHEREAL = 1;
+
+//! END
 
 	// npc->Misc[] index
 	// Set this so it doesn't conflict with other scripts. Legal values are 0-15.
@@ -178,15 +202,128 @@ namespace ghost3
 		return false;
 	}
 	
-	combodata GetInvisibleCombo()
+	combodata GetGhostSettingsCombo()
 	{
-		combodata cd = Game->GetCombo("INVISIBLE");
+		combodata cd = Game->GetCombo("GHOST");
 		if(cd) return cd;
 		else 
 		{
-			printf("No combo has the label INVISIBLE.\n");
+			printf("No combo has the label GHOST.\n");
 			return NULL;
 		}
+	}
+	int GetInvisibleComboID(combodata c)
+	{
+		return c->ID;
+	}
+	int GetInvisibleComboTile(combodata c)
+	{
+		return c->OriginalTile;
+	}
+	
+	// Game->Ghost[] Values
+	//Init
+	const int GHV_INITIALISED 		= 0;
+	//Combos	
+	const int GHV_SETTINGS_COMBO 		= 1; //Also blank
+	const int GHV_BLANK_COMBO 		= 1; 
+	const int GHV_SETTING_COMBO_ID 		= 2; //Also blank
+	const int GHV_BLANK_COMBO_ID 		= 2;
+	const int GHV_BLANK_TILE 		= 3;
+	//Shadows
+	const int GHV_SHADOW_TILE 		= 4;
+	const int GHV_SHADOW_CSET 		= 5;
+	const int GHV_SHADOW_FRAMES 		= 6;
+	const int GHV_SHADOW_ANIM_SPEED 	= 7;
+	const int GHV_SHADOW_TRANSLUCENT 	= 8;
+	const int GHV_SHADOW_FLICKER 		= 9;
+	const int GHV_LARGE_SHADOW_TILE 	= 10;
+	const int GHV_LARGE_SHADOW_CSET 	= 11;
+	const int GHV_LARGE_SHADOW_FRAMES 	= 12;
+	const int GHV_LARGE_SHADOW_ANIM_SPEED 	= 13;
+	const int GHV_LARGE_SHADOW_MIN_WIDTH 	= 14;
+	const int GHV_LARGE_SHADOW_MIN_HEIGHT 	= 15;
+	const int GHV_MIN_FFC		 	= 16;
+	const int GHV_MAX_FFC		 	= 17;
+	const int GHV_SPAWN_SPRITE		 	= 18;
+	const int GHV_FAKE_Z		 	= 19;
+	const int GHV_ENEMIES_FLICKER		 	= 20;
+	const int GHV_PREFER_GHOST_ZH_SHADOWS		 	= 21;
+	const int GHV_FIX_255_ANONE		 	= 22;
+	const int GHV_WEAPONS_HIT_PLATFORMS		 	= 23;
+	
+	bool initialised()
+	{
+		return (Game->Ghost[GHI_INITIALISED]);
+	}
+	void init()
+	{
+		if ( initialised() ) return;
+		unless(RunSetupCombo())
+		{
+			printf("Ghost.zh Version 3 failed to init as RunSetupCombo() failed to execute.\n");
+		}
+		unless(SetupShadowTiles())
+		{
+			printf("Ghost.zh Version 3 failed to init as SetupShadowTiles() failed to execute.\n");
+		}
+		// More System Values Here. All settings ^^ABOVE^^ to be moved to combodata.
+		// so that they are tileset-based!!!
+	}
+	int RunSetupCombo()
+	{
+		combodata cd = Game->GetCombo("GHOST");
+		
+		unless(cd->ID > 0) 
+		{
+			printf("No combo has the label GHOST.\n");
+			return 0;
+		}
+		Game->Ghost[GHV_SETTINGS_COMBO] = cd; //cache the combodata
+		Game->Ghost[GHV_SETTINGS_COMBO_ID] = cd->ID;
+		Game->Ghost[GHV_BLANK_TILE] = cd->OriginalTile; 
+		//if ^^this^^ fails, do Game->Ghost[GHV_BLANK_TILE] = GetInvisibleComboTile(Game->Ghost[GHV_BLANK_COMBO]);
+		Game->Ghost[GHV_MIN_FFC] = cd->Attribytes[0];
+		Game->Ghost[GHV_MAX_FFC] = cd->Attribytes[1];
+		Game->Ghost[GHV_SPAWN_SPRITE] = cd->Attribytes[2];
+		Game->Ghost[GHV_FAKE_Z] = (cd->Flags&0x1) ? 1 : 0;
+		Game->Ghost[GHV_ENEMIES_FLICKER] = (cd->Flags&0x2) ? 1 : 0;
+		Game->Ghost[GHV_PREFER_GHOST_ZH_SHADOWS] = (cd->Flags&0x4) ? 1 : 0;
+		Game->Ghost[GHV_FIX_255_ANONE] = (cd->Flags&0x8) ? 1 : 0;
+		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->Flags&0x10) ? 1 : 0;
+		return 1;
+	}
+	int SetupShadowTiles()
+	{
+		combodata shad1, shad2;
+		shad1 = Game->GetCombo("GHSHAD1");
+		shad2 = Game->GetCombo("GHSHAD2");
+		unless(shad1->ID > 0) 
+		{
+			printf("No combo has the label GHSHAD1.\n");
+			return 0;
+		}
+		unless(shad2->ID > 0) 
+		{
+			printf("No combo has the label GHSHAD2.\n");
+			return 0;
+		}
+			
+		Game->Ghost[GHV_SHADOW_TILE] = shad1->OriginalTile;
+		Game->Ghost[GHV_SHADOW_CSET] = shad1->CSet;
+		Game->Ghost[GHV_SHADOW_FRAMES] = shad1->Frames;
+		Game->Ghost[GHV_SHADOW_ANIM_SPEED] = shad1->ASpeed;
+		Game->Ghost[GHV_SHADOW_TRANSLUCENT] = ((shad1->UserFlags&0x1) ? 1 : 0);
+		Game->Ghost[GHV_SHADOW_FLICKER] = ((shad1->UserFlags&0x2) ? 1 : 0);
+		
+		Game->Ghost[GHV_LARGE_SHADOW_TILE] = shad2->OriginalTile;
+		Game->Ghost[GHV_LARGE_SHADOW_CSET] = shad2->CSet;
+		Game->Ghost[GHV_LARGE_SHADOW_FRAMES] = shad2->Frames;
+		Game->Ghost[GHV_LARGE_SHADOW_ANIM_SPEED] = shad2->ASpeed;
+		Game->Ghost[GHV_LARGE_SHADOW_TRANSLUCENT] = ((shad2->UserFlags&0x1) ? 1 : 0);
+		Game->Ghost[GHV_LARGE_SHADOW_MIN_WIDTH] = shad2->Attributes[0];
+		Game->Ghost[GHV_LARGE_SHADOW_MIN_HEIGHT] = shad2->Attributes[1];
+		return 1;
 	}
 }
 // End advanced settings -------------------------------------------------------
