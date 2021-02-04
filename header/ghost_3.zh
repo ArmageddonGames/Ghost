@@ -301,13 +301,14 @@ namespace ghost3
 	}
 	int RunSetupCombo()
 	{
-		combodata cd = Game->GetCombo("GHOST");
+		int cid = Game->GetCombo("GHOST");
 		
-		unless(cd->ID > 0) 
+		unless(cid > 0) 
 		{
 			printf("No combo has the label GHOST.\n");
 			return INIT_FAIL;
 		}
+		combodata cd = Game->LoadComboData(cid);
 		Game->Ghost[GHV_SETTINGS_COMBO] = cd; //cache the combodata
 		Game->Ghost[GHV_SETTINGS_COMBO_ID] = cd->ID;
 		Game->Ghost[GHV_BLANK_TILE] = cd->OriginalTile; 
@@ -326,13 +327,13 @@ namespace ghost3
 	// Please do not delete this. -Z
 	int RunLegacySetup()
 	{
-		combodata leg = Game->GetCombo("GHFFC");
-		unless(lef->ID > 0)
+		int cid = Game->GetCombo("GHFFC");
+		unless(cid > 0)
 		{	
 			printf("No combo has the label GHFFC\n");
 			return INIT_FAIL;
 		}
-			
+		combodata leg = Game->LoadComboData(cid);
 		Game->Ghost[GHV_FLASH_TIME] = leg->Attribytes[0];
 		Game->Ghost[GHV_KNOCKBACK_TIME] = leg->Attribytes[1];
 		Game->Ghost[GHV_KNOCKBACK_STEP] = leg->Attribytes[2];
@@ -348,13 +349,13 @@ namespace ghost3
 	}
 	int RunFixesSetup()
 	{
-		combodata bfix = Game->GetCombo("GHBUGFIX");
-		unless(bfix->ID > 0)
+		int cid = Game->GetCombo("GHBUGFIX");
+		unless(cid > 0)
 		{	
 			printf("No combo has the label GHBUGFIX\n");
 			return INIT_FAIL;
 		}
-		
+		combodata bfix = Game->LoadComboData(cid);
 		Game->Ghost[GHV_LEG_ETHEREAL] = (bfix->UserFlags&0x1) ? 1 : 0;
 		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (bfix->UserFlags&0x2) ? 1 : 0;
 		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (bfix->UserFlags&0x4) ? 1 : 0;
@@ -365,19 +366,22 @@ namespace ghost3
 	int SetupShadowTiles()
 	{
 		combodata shad1, shad2;
-		shad1 = Game->GetCombo("GHSHAD1");
-		shad2 = Game->GetCombo("GHSHAD2");
-		unless(shad1->ID > 0) 
+		int cid1, cid2;
+		cid1 = Game->GetCombo("GHSHAD1");
+		cid2 = Game->GetCombo("GHSHAD2");
+		unless(cid1 > 0) 
 		{
 			printf("No combo has the label GHSHAD1.\n");
 			return INIT_FAIL;
 		}
-		unless(shad2->ID > 0) 
+		unless(cid2 > 0) 
 		{
 			printf("No combo has the label GHSHAD2.\n");
 			return INIT_FAIL;
 		}
 			
+		shad1 = Game->LoadComboData(cid1);
+		shad2 = Game->LoadComboData(cid2);
 		Game->Ghost[GHV_SHADOW_TILE] = shad1->OriginalTile;
 		Game->Ghost[GHV_SHADOW_CSET] = shad1->CSet;
 		Game->Ghost[GHV_SHADOW_FRAMES] = shad1->Frames;
