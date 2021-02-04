@@ -436,7 +436,7 @@ namespace ghost3
 		// Water and pit walkability override solidity checking
 		if(IsWater(combo))
 			return Ghost_FlagIsSet(ghost, GHF_IGNORE_WATER);
-		if(GhostIsPit(combo))
+		if(IsPit(combo))
 			return Ghost_FlagIsSet(ghost, GHF_IGNORE_PITS);
 		// Ignore solidity: always OK
 		if(Ghost_FlagIsSet(ghost, GHF_IGNORE_SOLIDITY))

@@ -148,12 +148,6 @@ namespace ghost3
 	const int __EWI_DUMMY_STEP     = 4;
 	const int __EWI_DUMMY_SPRITE   = 5;
 
-	// Returns true if the given combo should be considered a pit.
-	bool GhostIsPit(int combo)
-	{
-	    return IsPit(combo); // std.zh implementation by default
-	}
-
 	// Returns true if enemies are visible on screens with the
 	// "All Enemies Are Invisible" flag enabled
 	bool HaveAmulet()
