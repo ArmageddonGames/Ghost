@@ -150,28 +150,6 @@ namespace ghost3
 	// Set this so it doesn't conflict with other scripts. Legal values are 0-15.
 	const int GHI_NPC_DATA = 15;
 
-	// eweapon->Misc[] indices
-	// These must be unique numbers between 0 and 15.
-	const int __EWI_FLAGS          = 15; // Every index but this one can be used by non-ghost.zh EWeapons
-	const int __EWI_ID             = 3;
-	const int __EWI_XPOS           = 4;
-	const int __EWI_YPOS           = 5;
-	const int __EWI_WORK           = 6;
-	const int __EWI_WORK_2         = 7; // Only used by a few movement types
-	const int __EWI_MOVEMENT       = 8;
-	const int __EWI_MOVEMENT_ARG   = 9;
-	const int __EWI_MOVEMENT_ARG_2 = 10;
-	const int __EWI_LIFESPAN       = 11;
-	const int __EWI_LIFESPAN_ARG   = 12;
-	const int __EWI_ON_DEATH       = 13;
-	const int __EWI_ON_DEATH_ARG   = 14;
-
-	// These are only used by dummy EWeapons;
-	// they can use the same values as __EWI_XPOS and __EWI_YPOS
-	const int __EWI_DUMMY_SOUND    = 2;
-	const int __EWI_DUMMY_STEP     = 4;
-	const int __EWI_DUMMY_SPRITE   = 5;
-
 	// Returns true if enemies are visible on screens with the
 	// "All Enemies Are Invisible" flag enabled
 	bool HaveAmulet()
@@ -204,7 +182,6 @@ namespace ghost3
 	
 	combodata GetSettingsCombo()
 	{
-<<<<<<< HEAD
 		int cd = Game->GetCombo("GHOST");
 		if(cd) return Game->LoadComboData(cd);
 		else 
@@ -212,9 +189,7 @@ namespace ghost3
 			printf("No combo has the label GHOST.\n");
 			return NULL;
 		}
-=======
-		return <combodata>Game->Ghost[GHV_SETTINGS_COMBO];
->>>>>>> ghostv3/3.0.0-Alpha-3
+		return Game->Ghost[GHV_SETTINGS_COMBO];
 	}
 	int GetInvisibleComboID()
 	{
@@ -231,43 +206,7 @@ namespace ghost3
 	};
 	
 	// Game->Ghost[] Values
-<<<<<<< HEAD
-	//Init
-	const int GHV_INITIALISED 		= 0;
-	//Combos	
-	const int GHV_SETTINGS_COMBO 		= 1; //Also blank
-	const int GHV_BLANK_COMBO 		= 1; 
-	const int GHV_SETTINGS_COMBO_ID 		= 2; //Also blank
-	const int GHV_BLANK_COMBO_ID 		= 2;
-	const int GHV_BLANK_TILE 		= 3;
-	//Shadows
-	const int GHV_SHADOW_TILE 		= 4;
-	const int GHV_SHADOW_CSET 		= 5;
-	const int GHV_SHADOW_FRAMES 		= 6;
-	const int GHV_SHADOW_ANIM_SPEED 	= 7;
-	const int GHV_SHADOW_TRANSLUCENT 	= 8;
-	const int GHV_SHADOW_FLICKER 		= 9;
-	const int GHV_LARGE_SHADOW_TILE 	= 10;
-	const int GHV_LARGE_SHADOW_CSET 	= 11;
-	const int GHV_LARGE_SHADOW_FRAMES 	= 12;
-	const int GHV_LARGE_SHADOW_ANIM_SPEED 	= 13;
-	const int GHV_LARGE_SHADOW_TRANSLUCENT 	= 14;
-	const int GHV_LARGE_SHADOW_FLICKER 		= 15;
-	const int GHV_LARGE_SHADOW_MIN_WIDTH 	= 16;
-	const int GHV_LARGE_SHADOW_MIN_HEIGHT 	= 17;
-	const int GHV_MIN_FFC		 	= 18;
-	const int GHV_MAX_FFC		 	= 19;
-	const int GHV_SPAWN_SPRITE		 	= 20;
-	const int GHV_FAKE_Z		 	= 21;
-	const int GHV_ENEMIES_FLICKER		 	= 22;
-	const int GHV_PREFER_GHOST_ZH_SHADOWS		 	= 23;
-	const int GHV_FIX_255_ANONE		 	= 24;
-	const int GHV_WEAPONS_HIT_PLATFORMS		 	= 25;
 	
-	bool initialised()
-	{
-		return (Game->Ghost[GHV_INITIALISED]);
-=======
 	enum GhostArrayValues
 	{
 		//Init
@@ -275,7 +214,7 @@ namespace ghost3
 		
 		//Combos	
 		GHV_SETTINGS_COMBO, // combodata, Also used for blank combo
-		GHV_SETTING_COMBO_ID, // int, Also used for blank combo ID
+		GHV_SETTINGS_COMBO_ID, // int, Also used for blank combo ID
 		GHV_BLANK_TILE, // int
 		
 		//Shadows
@@ -289,6 +228,8 @@ namespace ghost3
 		GHV_LARGE_SHADOW_CSET,	//int
 		GHV_LARGE_SHADOW_FRAMES, //int
 		GHV_LARGE_SHADOW_ANIM_SPEED, //int
+		GHV_LARGE_SHADOW_TRANSLUCENT,	//int
+		GHV_LARGE_SHADOW_FLICKER, //int
 		GHV_LARGE_SHADOW_MIN_WIDTH, //int
 		GHV_LARGE_SHADOW_MIN_HEIGHT, //int
 		
@@ -326,7 +267,6 @@ namespace ghost3
 	bool initialised()
 	{
 		return (Game->Ghost[GHV_INITIALISED]&0x1);
->>>>>>> ghostv3/3.0.0-Alpha-3
 	}
 	
 	int init()
@@ -349,11 +289,7 @@ namespace ghost3
 	}
 	int RunSetupCombo()
 	{
-<<<<<<< HEAD
-		combodata cd = Game->LoadComboData(Game->GetCombo("GHOST"));
-=======
 		int cid = Game->GetCombo("GHOST");
->>>>>>> ghostv3/3.0.0-Alpha-3
 		
 		unless(cid > 0) 
 		{
@@ -371,11 +307,9 @@ namespace ghost3
 		Game->Ghost[GHV_FAKE_Z] = (cd->UserFlags&0x1) ? 1 : 0;
 		Game->Ghost[GHV_ENEMIES_FLICKER] = (cd->UserFlags&0x2) ? 1 : 0;
 		Game->Ghost[GHV_PREFER_GHOST_ZH_SHADOWS] = (cd->UserFlags&0x4) ? 1 : 0;
-<<<<<<< HEAD
 		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 1 : 0;
 		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 1 : 0;
 		return 1;
-=======
 		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 0 : 1; //default on
 		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 0 : 1; //default on
 		return INIT_SUCCESS;
@@ -419,21 +353,14 @@ namespace ghost3
 		Game->Ghost[GH_FIX_EWM_THROW_DEP] = (bfix->UserFlags&0x8) ? 0 : 1; //default on
 		return INIT_SUCCESS;
 		
->>>>>>> ghostv3/3.0.0-Alpha-3
 	}
 	int SetupShadowTiles()
 	{
 		combodata shad1, shad2;
-<<<<<<< HEAD
-		shad1 = Game->LoadComboData(Game->GetCombo("GHSHAD1"));
-		shad2 = Game->LoadComboData(Game->GetCombo("GHSHAD2"));
-		unless(shad1->ID > 0) 
-=======
 		int cid1, cid2;
 		cid1 = Game->GetCombo("GHSHAD1");
 		cid2 = Game->GetCombo("GHSHAD2");
 		unless(cid1 > 0) 
->>>>>>> ghostv3/3.0.0-Alpha-3
 		{
 			printf("No combo has the label GHSHAD1.\n");
 			return INIT_FAIL;
