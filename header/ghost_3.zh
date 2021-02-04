@@ -319,8 +319,8 @@ namespace ghost3
 		Game->Ghost[GHV_FAKE_Z] = (cd->UserFlags&0x1) ? 1 : 0;
 		Game->Ghost[GHV_ENEMIES_FLICKER] = (cd->UserFlags&0x2) ? 1 : 0;
 		Game->Ghost[GHV_PREFER_GHOST_ZH_SHADOWS] = (cd->UserFlags&0x4) ? 1 : 0;
-		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 1 : 0;
-		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 1 : 0;
+		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 0 : 1; //default on
+		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 0 : 1; //default on
 		return INIT_SUCCESS;
 	}
 	// Used for old ffc setup. Will be in 2.9, so I am putting it here for now so that I do not forget it int he 2.9 refactor.
@@ -356,10 +356,10 @@ namespace ghost3
 			return INIT_FAIL;
 		}
 		combodata bfix = Game->LoadComboData(cid);
-		Game->Ghost[GHV_LEG_ETHEREAL] = (bfix->UserFlags&0x1) ? 1 : 0;
-		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (bfix->UserFlags&0x2) ? 1 : 0;
-		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (bfix->UserFlags&0x4) ? 1 : 0;
-		Game->Ghost[GH_FIX_EWM_THROW_DEP] = (bfix->UserFlags&0x8) ? 1 : 0;
+		Game->Ghost[GHV_LEG_ETHEREAL] = (bfix->UserFlags&0x1) ? 0 : 1; //default on
+		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (bfix->UserFlags&0x2) ? 0 : 1; //default on
+		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (bfix->UserFlags&0x4) ? 0 : 1; //default on
+		Game->Ghost[GH_FIX_EWM_THROW_DEP] = (bfix->UserFlags&0x8) ? 0 : 1; //default on
 		return INIT_SUCCESS;
 		
 	}
