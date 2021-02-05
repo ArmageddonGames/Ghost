@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 Alpha 3
+// Version 3.0.0 Alpha 5
 // Use this for 2.55, and later versions of ZQuest
 
 // See ghost_zh_docs/index.html for documentation.
@@ -13,130 +13,11 @@
 
 namespace ghost3
 {
-	
-//! BEGIN: I have copied these to Game->Ghost, these constants need to be updated to use Game->Ghost calls.
-	
-	//All User Settings
-	// Standard settings -----------------------------------------------------------
-	// Small (1x1) shadow settings
-	const int GH_SHADOW_TILE = 27400;
-	const int GH_SHADOW_CSET = 7;
-	const int GH_SHADOW_FRAMES = 4;
-	const int GH_SHADOW_ANIM_SPEED = 8;
-	const int GH_SHADOW_TRANSLUCENT = 1; // 0 = No, 1 = Yes
-	const int GH_SHADOW_FLICKER = 0; // 0 = No, 1 = Yes
-
-	// Large (2x2) shadow settings
-	// If GH_LARGE_SHADOW_TILE is 0, large shadows will be disabled
-	const int GH_LARGE_SHADOW_TILE = 27392; // Top-left corner
-	const int GH_LARGE_SHADOW_CSET = 7;
-	const int GH_LARGE_SHADOW_FRAMES = 4;
-	const int GH_LARGE_SHADOW_ANIM_SPEED = 8;
-	const int GH_LARGE_SHADOW_MIN_WIDTH = 3;  // Enemies must be at least this wide
-	const int GH_LARGE_SHADOW_MIN_HEIGHT = 3; // and this high to use large shadows
-
-	// AutoGhost settings
-	const int AUTOGHOST_MIN_FFC = 1; // Min: 1, Max: 32
-	const int AUTOGHOST_MAX_FFC = 32; // Min: 1, Max: 32
-	const int AUTOGHOST_MIN_ENEMY_ID = 20; // Min: 20, Max: 511
-	const int AUTOGHOST_MAX_ENEMY_ID = 511; // Min: 20, Max: 511
-
-	// Other settings
-	const int GH_SPAWN_SPRITE = 22; // Min: 0, Max: 255, Default: 22
-	const int GH_FAKE_Z = 0; // 0 = No, 1 = Yes
-	const int GH_FAKE_EWEAPON_Z = 0; // 0 = No, 1 = Yes
-	const int GH_ENEMIES_FLICKER = 0; // 0 = No, 1 = Yes
-	const int GH_PREFER_GHOST_ZH_SHADOWS = 0; // 0 = No, 1 = Yes
-
-	// Invisible combo with no properties set
-	const int GH_INVISIBLE_COMBO = 1; // Min: 1, Max: 65279
-
-	// End standard settings -------------------------------------------------------
-
-//! END
 
 	// Advanced settings -----------------------------------------------------------
-
-//! BEGIN: Moving these two to tileset init
-
-	// For ZC Versions where Animation Style (None) does not set ->Tile, enable this. 
-	const int GH_FIX_255_ANONE = 1;
-
-	// If set to 1, weapons in sideview will die when they hit
-	// a solid sideview platform.
-	// Set to 0 if this causes bugs in legacy quests or scripts.
-	const int GH_WEAPONS_HIT_PLATFORMS = 1;
-	
-//! END
-
-
-//! BEGIN: These all seem to be autoghost. We need to decide if any of these will still be used
-//       and if so, move them onto settings combos. 
-
-	// AutoGhost will read a script name from the enemy's name if attribute 12
-	// is set to this. Must be a negative number.
-	const int AUTOGHOST_READ_NAME = -1;
-
-	// When reading a script from the enemy name, this character marks the
-	// beginning of the script name.
-	// Default: 64 ( @ )
-	const int AUTOGHOST_DELIMITER = 64;
-
-	// Misc. attribute 11 can be set to this instead of GH_INVISIBLE_COMBO.
-	// Must be a negative number.
-	const int GH_INVISIBLE_ALT = -1;
-
-	// This will use the invisible combo, but also set npc->Extend to 3 or 4,
-	// hiding the initial spawn puff. Must be a negative number.
-	const int GH_INVISIBLE_EXTEND = -2;
-
-	// If enabled, the FFC will be invisible, and Screen->DrawCombo will be used
-	// to display enemies.
-	const int GH_USE_DRAWCOMBO = 1;
-	
-// ! END
-
-
-//! BEGIN: These seem to be things that should be handled in script. 
-
-	// Enemies flash or flicker for this many frames when hit. This does not
-	// affect enemies that use the invisible combo.
-	// Default: 32
-	const int GH_FLASH_TIME = 32;
-
-	// Enemies will be knocked back for this many frames when hit.
-	// Default: 16
-	// Max: 4095
-	const int GH_KNOCKBACK_TIME = 16;
-
-	// The speed at which enemies are knocked back, in pixels per frame.
-	// Default: 4
-	const int GH_KNOCKBACK_STEP = 4;
-
-	// The imprecision setting used when a movement function is called internally
-	// (except for walking functions).
-	const int GH_DEFAULT_IMPRECISION = 2;
-	
-// ! END
-	
 	
 	
 //! BEGIN: These BUGFIX settings should be removed and be the default behaviour in 3.0.
-
-	// Whether to set ffc->Link=0 when cleaning up an FFC. In 2.50.3 RC1 and before,
-	// this does not work due to a bug. Set this to 1 only if you're using a newer
-	// ZC version than 2.50.3 RC1.
-	const int GH_CLEAR_FFC_LINK = 0;
-	
-	// If set to 1, this will patch bugs where falling weapons can
-	// be inappropriately destroyed because of their position.
-	// Set to 0 if this causes bugs in legacy quests or scripts.
-	const int GH_FIX_EWM_FALL = 1;
-
-	// If set to 1, this will patch bugs where thrown weapons can
-	// be inappropriately destroyed because of their position.
-	// Set to 0 if this causes bugs in legacy quests or scripts.
-	const int GH_FIX_EWM_THROW = 1;
 	
 	// Set to 1 to make ghost ffcs Ethereal so that they cannot block
 	// other combo types/flags on the screen.
@@ -269,7 +150,19 @@ namespace ghost3
 		return (Game->Ghost[GHV_INITIALISED]&0x1);
 	}
 	
-	int init()
+	void init(npc ghost, untyped ptr)
+	{
+		if (sysinit() )
+		{
+			ghost->Misc[GH_INTERNAL] = ptr;
+		}
+		else
+		{
+			printf("Could not initialise ghosted npc.\n");
+		}
+	}
+	
+	int sysinit()
 	{
 		if ( initialised() ) return INIT_ALREADY;
 		unless(RunSetupCombo())
@@ -287,6 +180,46 @@ namespace ghost3
 		Game->Ghost[GHV_INITIALISED] |= 0x1;
 		return INIT_SUCCESS;
 	}
+	
+	/*
+	
+		Ghost Setup Combo Properties
+		ID: Must be 1 or higher; the lower, the better.
+		Tile: Should be blank.
+		ATTRIBYTES
+		[0] Min ffc used by ghost, must be 1-32
+		[1] Max ffc used by ghost, must be 1-32 and greater or equal to [0].
+		[2] Spawn sprite, 0 to 255
+		[3] Default enemy walking imprecision. (usually set to '2')
+	
+		ATTRIBUTES
+		[0] (Unused)
+		[1] (Unused)
+		[2] (Unused)
+		[3] (Unused)
+	
+		FLAGS
+		Flag 1: Fake Z (if ENABLED), Engine Z (if NOT ENABLED)
+		Flag 2: Enemies flicker (if ENABLED), Engine hit effect (if NOT ENABLED)
+		Flag 3: Scripted shadows (if ENABLED), Engine shadows (if NOT ENABLED)
+		Flag 4: Fixed ANONE handling (if NOT ENABLED), broken ANONE (if ENABLED)
+		Flag 5: Fixed sideview platform weapon handling/solidity/collision (if NOT ENABLED), broken ghost sideview weapons (if ENABLED)
+		Flag 6: FFCs made by GHost are Ethereal (if NOT ENABLED), or are NOT ETHEREAL (if ENABLED)
+		Flag 7: FFC->Link is cleared when an ffc is used (if NOT Enabled), Link to other ffcs is NOT cleared (if ENABLED)
+		Flag 8: Corrected EWM_FALL (if NOT ENABLED), broken EWM_FALL (if ENABLED).
+		Flag 9: Corrected EWM_THROW (if NOT ENABLED), broken EWM_THROW (if ENABLED).
+		Flag 10
+		Flag 11
+		Flag 12
+		Flag 13
+		Flag 14
+		Flag 15
+		Flag 16
+	
+	
+	
+	*/
+	
 	int RunSetupCombo()
 	{
 		int cid = Game->GetCombo("GHOST");
@@ -301,17 +234,29 @@ namespace ghost3
 		Game->Ghost[GHV_SETTINGS_COMBO_ID] = cd->ID;
 		Game->Ghost[GHV_BLANK_TILE] = cd->OriginalTile; 
 		//if ^^this^^ fails, do Game->Ghost[GHV_BLANK_TILE] = GetInvisibleComboTile(Game->Ghost[GHV_BLANK_COMBO]);
-		Game->Ghost[GHV_MIN_FFC] = cd->Attribytes[0];
-		Game->Ghost[GHV_MAX_FFC] = cd->Attribytes[1];
+		
+		Game->Ghost[GHV_MIN_FFC] = Clamp(cd->Attribytes[0],1,32);
+		Game->Ghost[GHV_MAX_FFC] = Clamp(cd->Attribytes[1],1,32);
+		if ( Game->Ghost[GHV_MAX_FFC] < Game->Ghost[GHV_MIN_FFC] )
+		{
+			printf("Error in GHOST combo setup. Attribyte[1] for max FFC MUST be \ngreater or equal to Attribyte[0[ for min FFC!\n");
+			Game->Ghost[GHV_MAX_FFC] = Game->Ghost[GHV_MIN_FFC];
+		}
 		Game->Ghost[GHV_SPAWN_SPRITE] = cd->Attribytes[2];
+		Game->Ghost[GHV_DEFAULT_IMPRECISION] = cd->Attribytes[3];
+		
 		Game->Ghost[GHV_FAKE_Z] = (cd->UserFlags&0x1) ? 1 : 0;
 		Game->Ghost[GHV_ENEMIES_FLICKER] = (cd->UserFlags&0x2) ? 1 : 0;
 		Game->Ghost[GHV_PREFER_GHOST_ZH_SHADOWS] = (cd->UserFlags&0x4) ? 1 : 0;
 		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 1 : 0;
 		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 1 : 0;
-		return 1;
-		Game->Ghost[GHV_FIX_255_ANONE] = (cd->UserFlags&0x8) ? 0 : 1; //default on
-		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 0 : 1; //default on
+		
+		//Fixes
+		Game->Ghost[GHV_LEG_ETHEREAL] = (bfix->UserFlags&0x20) ? 0 : 1; //default on
+		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (bfix->UserFlags&0x40) ? 0 : 1; //default on
+		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (bfix->UserFlags&0x80) ? 0 : 1; //default on
+		Game->Ghost[GH_FIX_EWM_THROW_DEP] = (bfix->UserFlags&0x100) ? 0 : 1; //default on
+		
 		return INIT_SUCCESS;
 	}
 	// Used for old ffc setup. Will be in 2.9, so I am putting it here for now so that I do not forget it int he 2.9 refactor.
@@ -328,32 +273,16 @@ namespace ghost3
 		Game->Ghost[GHV_FLASH_TIME] = leg->Attribytes[0];
 		Game->Ghost[GHV_KNOCKBACK_TIME] = leg->Attribytes[1];
 		Game->Ghost[GHV_KNOCKBACK_STEP] = leg->Attribytes[2];
-		Game->Ghost[GHV_DEFAULT_IMPRECISION] = leg->Attribytes[3];
 		Game->Ghost[GHV_LEG_AUTOGHOST_READ_NAME] = leg->Attributes[0];
 		Game->Ghost[GHV_LEG_AUTOGHOST_DELIMITER] = leg->Attributes[1];
 		Game->Ghost[GHV_LEG_INVISIBLE_ALT] = leg->Attributes[2];
 		Game->Ghost[GHV_LEG_INVISIBLE_EXTEND] = leg->Attributes[3];
 		Game->Ghost[GHV_LEG_USE_DRAWCOMBO] = (leg->UserFlags&0x1) ? 1 : 0;
-		Game->Ghost[GHV_LEG_USE_DRAWCOMBO] = (leg->UserFlags&0x2) ? 1 : 0;
+		//Game->Ghost[GHV_LEG_USE_DRAWCOMBO] = (leg->UserFlags&0x2) ? 1 : 0; //Did I miss one?
 		return INIT_SUCCESS;
 		
 	}
-	int RunFixesSetup()
-	{
-		int cid = Game->GetCombo("GHBUGFIX");
-		unless(cid > 0)
-		{	
-			printf("No combo has the label GHBUGFIX\n");
-			return INIT_FAIL;
-		}
-		combodata bfix = Game->LoadComboData(cid);
-		Game->Ghost[GHV_LEG_ETHEREAL] = (bfix->UserFlags&0x1) ? 0 : 1; //default on
-		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (bfix->UserFlags&0x2) ? 0 : 1; //default on
-		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (bfix->UserFlags&0x4) ? 0 : 1; //default on
-		Game->Ghost[GH_FIX_EWM_THROW_DEP] = (bfix->UserFlags&0x8) ? 0 : 1; //default on
-		return INIT_SUCCESS;
-		
-	}
+	
 	int SetupShadowTiles()
 	{
 		combodata shad1, shad2;

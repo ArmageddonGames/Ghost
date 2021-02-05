@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 2
+// Version 3.0.0 - Alpha 5
 
 namespace ghost3
 {
@@ -21,17 +21,12 @@ namespace ghost3
 		GHI_DIR
 	};
 
-	bool GhostInit(npc ghost, int internal)
-	{
-		ghost->Misc[GH_INTERNAL] = internal;
-	}
-
-	int Ghost_GetInternal(npc ghost, int index)
+	int GetInternal(npc ghost, int index)
 	{
 		int flags = ghost->Misc[GH_INTERNAL];
 		return flags[index];
 	}
-	void Ghost_SetInternal(npc ghost, int index, int value)
+	void SetInternal(npc ghost, int index, untyped value)
 	{
 		int flags = ghost->Misc[GH_INTERNAL];
 		flags[index] = value;
@@ -42,42 +37,42 @@ namespace ghost3
 		// Handle gravity first
 		int jump = ghost->Jump;
 		ghost->Jump=0;
-		if(!Ghost_FlagIsSet(ghost, GHF_NO_FALL))
+		unless(FlagIsSet(ghost, GHF_NO_FALL))
 		{
 			// Sideview: Jump/fall on Y axis
 			if(IsSideview())
 			{
-				// Use Ghost_CanMove to check for platforms
-				if(jump || Ghost_CanMove(ghost, DIR_DOWN, 1, GH_DEFAULT_IMPRECISION))
+				// Use CanMove to check for platforms
+				if(jump || CanMove(ghost, DIR_DOWN, 1, Game->Ghost[GHV_DEFAULT_IMPRECISION]))
 				{
 					// Temporarily unset GHF_SET_DIRECTION so that Ghost_Move doesn't
 					// change the enemy's direction here
-					bool setDir=Ghost_FlagIsSet(ghost, GHF_SET_DIRECTION);
-					Ghost_UnsetFlag(ghost, GHF_SET_DIRECTION);
+					bool setDir=FlagIsSet(ghost, GHF_SET_DIRECTION);
+					ghost3::UnsetFlag(ghost, GHF_SET_DIRECTION);
 					
 					// Jumping
 					if(jump>0)
 					{
-						// Set GHF_NO_FALL temporarily so Ghost_CanMove(DIR_UP) can return true
-						Ghost_SetFlag(ghost, GHF_NO_FALL);
+						// Set GHF_NO_FALL temporarily so CanMove(DIR_UP) can return true
+						ghost3::SetFlag(ghost, GHF_NO_FALL);
 						
-						Ghost_Move(ghost, DIR_UP, jump, GH_DEFAULT_IMPRECISION);
+						ghost3::Move(ghost, DIR_UP, jump, Game->Ghost[GHV_DEFAULT_IMPRECISION]);
 						jump=Max(jump-Game->Gravity[GR_STRENGTH], -Game->Gravity[GR_TERMINALV]);
 						
 						// If it's still jumping, check if it can move any farther;
 						// if it can't, it's hit something and should begin falling
-						if(jump>0 && !Ghost_CanMove(ghost, DIR_UP, 1, GH_DEFAULT_IMPRECISION))
+						if(jump>0 && !CanMove(ghost, DIR_UP, 1, Game->Ghost[GHV_DEFAULT_IMPRECISION]))
 							jump=0;
 						
-						Ghost_UnsetFlag(ghost, GHF_NO_FALL);
+						ghost3::UnsetFlag(ghost, GHF_NO_FALL);
 					}
 					// Falling
 					else
 					{
-						Ghost_Move(ghost, DIR_DOWN, -jump, GH_DEFAULT_IMPRECISION);
+						ghost3::Move(ghost, DIR_DOWN, -jump, Game->Ghost[GHV_DEFAULT_IMPRECISION]);
 						
 						// Can it fall farther?
-						if(Ghost_CanMove(ghost, DIR_DOWN, 1, GH_DEFAULT_IMPRECISION))
+						if(CanMove(ghost, DIR_DOWN, 1, Game->Ghost[GHV_DEFAULT_IMPRECISION]))
 							jump=Max(jump-Game->Gravity[GR_STRENGTH], -Game->Gravity[GR_TERMINALV]);
 						// If not, stop falling
 						else
@@ -86,7 +81,7 @@ namespace ghost3
 					
 					// Restore the flag
 					if(setDir)
-						Ghost_SetFlag(ghost, GHF_SET_DIRECTION);
+						ghost3::SetFlag(ghost, GHF_SET_DIRECTION);
 				}
 			}
 			// Top-down: Jump/fall on Z axis
@@ -114,14 +109,14 @@ namespace ghost3
 			ghost->Misc[GH_VX] += ghost->Misc[GH_AX];
 			ghost->Misc[GH_VY] += ghost->Misc[GH_AY];
 
-			Ghost_MoveXY(ghost, ghost->Misc[GH_VX], ghost->Misc[GH_VY], GH_DEFAULT_IMPRECISION);
-			Ghost_ForceDir(ghost, ghost->Dir);
+			ghost3::MoveXY(ghost, ghost->Misc[GH_VX], ghost->Misc[GH_VY], Game->Ghost[GHV_DEFAULT_IMPRECISION]);
+			ghost3::ForceDir(ghost, ghost->Dir);
 		}
 
-		Ghost_WaitframePart1(ghost, false);
-		Ghost_WaitframeLight(ghost);
-		Ghost_ClearIFlags(ghost);
-		return Ghost_WaitframePart2(ghost, clearOnDeath, quitOnDeath);
+		ghost3::Ghost_WaitframePart1(ghost, false);
+		ghost3::Ghost_WaitframeLight(ghost);
+		ghost3::ClearIFlags(ghost);
+		return ghost3::Ghost_WaitframePart2(ghost, clearOnDeath, quitOnDeath);
 	}
 
 	// Before waiting: Update direction, set combo, set overlay flag, draw shadow
@@ -132,14 +127,14 @@ namespace ghost3
 			ghost->Dir = ghost->Misc[GH_INTERNAL][GHI_DIR];
 
 		// Set direction based on movement
-		else if(Ghost_FlagIsSet(ghost, GHF_SET_DIRECTION) &&
+		else if(FlagIsSet(ghost, GHF_SET_DIRECTION) &&
 			(ghost->Misc[GH_INTERNAL][GHI_PREVX] != ghost->X || ghost->Misc[GH_INTERNAL][GHI_PREVY] != ghost->Y))
 		{	
 			float xStep = ghost->X - ghost->Misc[GH_INTERNAL][GHI_PREVX];
 			float yStep = ghost->Y - ghost->Misc[GH_INTERNAL][GHI_PREVY];
 
 			// Use 8 directions if 8-way flag is set
-			if(Ghost_FlagIsSet(ghost, GHF_8WAY))
+			if(FlagIsSet(ghost, GHF_8WAY))
 				ghost->Dir = AngleDir8(WrapAngle(ArcTan(xStep, yStep)) * RADIAN);
 
 
@@ -162,17 +157,17 @@ namespace ghost3
 				}
 			}
 		}
-		Ghost_SetInternal(ghost, GHI_PREVX, ghost->X);
-		Ghost_SetInternal(ghost, GHI_PREVY, ghost->Y);
+		ghost3::SetInternal(ghost, GHI_PREVX, ghost->X);
+		ghost3::SetInternal(ghost, GHI_PREVY, ghost->Y);
 		
 		// Set combo
-		if(ghost->Misc[GH_DATA] == GH_INVISIBLE_COMBO)
+		if(ghost->Misc[GH_DATA] == Game->Ghost[GHV_SETTINGS_COMBO_ID])
 		{
 			ghost->Tile = Game->ComboTile(ghost->Misc[GH_DATA]);
 		}
 		else if(ghost->Misc[GH_DATA] > 0)
 		{
-			if(Ghost_FlagIsSet(ghost, GHF_8WAY) || Ghost_FlagIsSet(ghost, GHF_4WAY))
+			if(FlagIsSet(ghost, GHF_8WAY) || FlagIsSet(ghost, GHF_4WAY))
 			{
 				if(ghost->Tile != Game->ComboTile(ghost->Misc[GH_DATA] + ghost->Dir))
 					ghost->Tile = Game->ComboTile(ghost->Misc[GH_DATA] + NormalizeDir(ghost->Dir));
@@ -194,7 +189,7 @@ namespace ghost3
 		// Not dead; was it hit, stunned, or frozen?
 		unless(dead)
 		{
-			dead = !Ghost_CheckFreeze(ghost);
+			dead = !ghost3::CheckFreeze(ghost);
 		}
 		
 		// Dead; clean up
@@ -209,17 +204,17 @@ namespace ghost3
 		return true;
 	}
 
-	bool Ghost_CheckFreeze(npc ghost)
+	bool CheckFreeze(npc ghost)
 	{
-		if((Ghost_FlagIsSet(ghost,GHF_CLOCK) && ClockIsActive()) ||
-		   (Ghost_FlagIsSet(ghost,GHF_STUN) && ghost->Stun > 0))
+		if((FlagIsSet(ghost,GHF_CLOCK) && ClockIsActive()) ||
+		   (FlagIsSet(ghost,GHF_STUN) && ghost->Stun > 0))
 		{
 			
-			Ghost_SetIFlag(ghost, GHFI_WAS_FROZEN);
+			ghost3::SetIFlag(ghost, GHFI_WAS_FROZEN);
 			
 			// Do nothing except get hit until recovered
-			while((Ghost_FlagIsSet(ghost,GHF_CLOCK) && ClockIsActive()) ||
-				  (Ghost_FlagIsSet(ghost,GHF_STUN) && ghost->Stun > 0))
+			while((FlagIsSet(ghost,GHF_CLOCK) && ClockIsActive()) ||
+				  (FlagIsSet(ghost,GHF_STUN) && ghost->Stun > 0))
 			{
 				Ghost_WaitframeLight(ghost);
 				
@@ -230,7 +225,7 @@ namespace ghost3
 				
 				if(ghost->Misc[GH_DATA] > 0)
 				{
-					if(Ghost_FlagIsSet(ghost, GHF_8WAY) || Ghost_FlagIsSet(ghost, GHF_4WAY))
+					if(FlagIsSet(ghost, GHF_8WAY) || FlagIsSet(ghost, GHF_4WAY))
 					{
 						if(ghost->Tile != Game->ComboTile(ghost->Misc[GH_DATA] + ghost->Dir))
 							ghost->Tile = Game->ComboTile(ghost->Misc[GH_DATA] + NormalizeDir(ghost->Dir));
@@ -256,7 +251,7 @@ namespace ghost3
 	{
 		for(; numFrames>0; --numFrames)
 		{
-			unless(Ghost_Waitframe(ghost, clearOnDeath, quitOnDeath))
+			unless(ghost3::Ghost_Waitframe(ghost, clearOnDeath, quitOnDeath))
 				return false;
 		}
 		return true;
@@ -265,25 +260,25 @@ namespace ghost3
 	void Ghost_WaitframesLight(npc ghost, int numFrames)
 	{
 		for(; numFrames>0; --numFrames)
-			Ghost_WaitframeLight(ghost);
+			ghost3::Ghost_WaitframeLight(ghost);
 	}
 
 	void Ghost_Waitframe(npc ghost)
 	{
-		Ghost_Waitframe(ghost, true, true);
+		ghost3::Ghost_Waitframe(ghost, true, true);
 	}
 
 	void Ghost_Waitframes(npc ghost, int numFrames)
 	{
-		Ghost_Waitframes(ghost, true, true, numFrames);
+		ghost3::Ghost_Waitframes(ghost, true, true, numFrames);
 	}
 
 
 	bool Ghost_Waitframe(npc ghost, Ghost_DeathAnim deathAnimation, bool quitOnDeath)
 	{
-		unless(Ghost_Waitframe(ghost, false, false))
+		unless(ghost3::Ghost_Waitframe(ghost, false, false))
 		{
-			Ghost_DeathAnimation(ghost, deathAnimation, quitOnDeath);
+			ghost3::DeathAnimation(ghost, deathAnimation, quitOnDeath);
 			if(quitOnDeath)
 				Quit();
 			return false;

@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 2
+// Version 3.0.0 - Alpha 5
 
 namespace ghost3
 {
@@ -42,7 +42,7 @@ namespace ghost3
 	const int GH_UNSET_FLAGS                        = 100000b; // AND to unset flags that last one frame
 
 
-	void Ghost_SetFlag(npc ghost, int flag)
+	void SetFlag(npc ghost, int flag)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		if(flag&0x10000)
@@ -59,7 +59,7 @@ namespace ghost3
 	}
 
 
-	void Ghost_UnsetFlag(npc ghost, int flag)
+	void UnsetFlag(npc ghost, int flag)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		if(flag&0x10000)
@@ -75,7 +75,7 @@ namespace ghost3
 	}
 
 
-	bool Ghost_FlagIsSet(npc ghost, int flag)
+	bool FlagIsSet(npc ghost, int flag)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		if((flag&0x10000)!=0)
@@ -90,35 +90,35 @@ namespace ghost3
 		}
 	}
 
-	void Ghost_SetIFlag(npc ghost, int flag)
+	void SetIFlag(npc ghost, int flag)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		arr[GHI_IFLAGS]|=flag;
 	}
 
 
-	void Ghost_UnsetIFlag(npc ghost, int flag)
+	void UnsetIFlag(npc ghost, int flag)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		arr[GHI_IFLAGS]&=~flag;
 	}
 
 
-	bool Ghost_IFlagIsSet(npc ghost, int flag)
+	bool IFlagIsSet(npc ghost, int flag)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		return (arr[GHI_IFLAGS]&flag)==flag;
 	}
 
 
-	void Ghost_ClearFlags(npc ghost)
+	void ClearFlags(npc ghost)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		arr[GHI_FLAGS]=0;
 		arr[GHI_FLAGS2]=0;
 	}
 
-	void Ghost_ClearIFlags(npc ghost)
+	void ClearIFlags(npc ghost)
 	{
 		int arr = ghost->Misc[GH_INTERNAL];
 		arr[GHI_IFLAGS]&=GH_UNSET_FLAGS;

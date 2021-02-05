@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 2
+// Version 3.0.0 - Alpha 5
 
 namespace ghost3
 {
@@ -20,7 +20,7 @@ namespace ghost3
 	    // but negative means it's strictly off-limits.
 	    
 	    // Tiles too close to other enemies are undesirable
-	    for(int i=Screen->NumNPCs(); i>0; i--)
+	    for(int i=Screen->NumNPCs(); i>0; --i)
 	    {
 		otherNPC=Screen->LoadNPC(i);
 		checkCombo=ComboAt(otherNPC->X, otherNPC->Y);
@@ -236,7 +236,7 @@ namespace ghost3
 	    {
 		f=Screen->LoadFFC(i);
 		
-		if((!(f->Data) || f->Data==GH_INVISIBLE_COMBO) )
+		if((!(f->Data) || f->Data==Game->Ghost[GHV_SETTINGS_COMBO_ID]) )
 		{
 		
 		   if (!(f->Script))
@@ -257,11 +257,11 @@ namespace ghost3
 	{
 	    ffc f;
 	    
-	    for(int i=Max(startingFrom+1, ghost3::AUTOGHOST_MIN_FFC); i<=(Min(ghost3::AUTOGHOST_MAX_FFC,32)); ++i)
+	    for(int i=Max(startingFrom+1, Game->Ghost[GHV_MIN_FFC]); i<=(Min(Game->Ghost[GHV_MAX_FFC],32)); ++i)
 	    {
 		f=Screen->LoadFFC(i);
 		
-		if((!(f->Data) || f->Data==GH_INVISIBLE_COMBO) )
+		if((!(f->Data) || f->Data==Game->Ghost[GHV_SETTINGS_COMBO_ID]) )
 		{
 		
 		   if (!(f->Script))
@@ -279,36 +279,36 @@ namespace ghost3
 	}
 
 
-	bool Ghost_GotHit(npc ghost)
+	bool GotHit(npc ghost)
 	{
 	    return (ghost->HitBy[6] != 0);
 	}
 
-	bool Ghost_WasFrozen(npc ghost)
+	bool WasFrozen(npc ghost)
 	{
-	    return Ghost_IFlagIsSet(ghost, GHFI_WAS_FROZEN);
+	    return ghost3::IFlagIsSet(ghost, GHFI_WAS_FROZEN);
 	}
 
-	void Ghost_DeathAnimation(npc ghost, Ghost_DeathAnim type, bool kill)
+	void DeathAnimation(npc ghost, ghost3::DeathAnim type, bool kill)
 	{
 		ghost->Immortal = true;
 		switch(type)
 		{
 			case GHD_NONE: break;
 			case GHD_EXPLODE:
-				__Ghost_Explode(ghost, kill, false);
+				ghost3::Explode(ghost, kill, false);
 				break;
 			case GHD_EXPLODE_FLASH:
-				__Ghost_Explode(ghost, kill, true);
+				ghost3::Explode(ghost, kill, true);
 				break;
 			case GHD_SHRINK:
-				__Ghost_ShrinkAway(ghost, kill);
+				ghost3::ShrinkAway(ghost, kill);
 				break;
 		}
 		ghost->Immortal = false;
 	}
 
-	float Ghost_GetAttribute(npc ghost, int index, float defaultVal, float min, float max)
+	float GetAttribute(npc ghost, int index, float defaultVal, float min, float max)
 	{
 	    if(index<0 || index>11)
 		return 0;
@@ -324,7 +324,7 @@ namespace ghost3
 	    return attr;
 	}
 
-	float Ghost_GetAttribute(npc ghost, int index, float defaultVal)
+	float GetAttribute(npc ghost, int index, float defaultVal)
 	{
 	    if(index<0 || index>11)
 		return 0;
@@ -351,7 +351,7 @@ namespace ghost3
 	    //ghzhData[GHI_GLOBAL_FLAGS]&=~GHGF_SUSPEND;
 	}
 
-	void __Ghost_Explode(npc ghost, bool kill, bool flash)
+	void Explode(npc ghost, bool kill, bool flash)
 	{
 	    lweapon explosion;
 	    int baseX=ghost->X+ghost->DrawXOffset;
@@ -378,7 +378,7 @@ namespace ghost3
 	    __DeathAnimEnd(ghost, kill);
 	}
 
-	void __Ghost_ShrinkAway(npc ghost, bool kill)
+	void ShrinkAway(npc ghost, bool kill)
 	{
 	    lweapon explosion;
 	    int baseWidth=ghost->TileWidth*16;

@@ -1,9 +1,9 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 2
+// Version 3.0.0 - Alpha 5
 
 namespace ghost3
 {
-	void Ghost_Transform(npc ghost, int combo, int cset, int tileWidth, int tileHeight)
+	void Transform(npc ghost, int combo, int cset, int tileWidth, int tileHeight)
 	{
 		int diff;
 		ghost->Extend = 3;
@@ -33,11 +33,11 @@ namespace ghost3
 			ghost->Y+=diff;
 		}
 		
-		Ghost_SetHitOffsets(ghost, 0, 0, 0, 0);
+		ghost3::SetHitOffsets(ghost, 0, 0, 0, 0);
 	}
 
 
-	void Ghost_SetSize(npc ghost, int tileWidth, int tileHeight)
+	void SetSize(npc ghost, int tileWidth, int tileHeight)
 	{
 		ghost->Extend = 3;
 		if(tileWidth>0)
@@ -46,11 +46,11 @@ namespace ghost3
 		if(tileHeight>0)
 			ghost->TileHeight=tileHeight;
 		
-		Ghost_SetHitOffsets(ghost, 0, 0, 0, 0);
+		ghost3::SetHitOffsets(ghost, 0, 0, 0, 0);
 	}
 
 
-	void Ghost_SetHitOffsets(npc ghost, float top, float bottom, float left, float right)
+	void SetHitOffsets(npc ghost, float top, float bottom, float left, float right)
 	{
 		if(top>0 && top<1)
 			top=Round(top*ghost->TileHeight*16);
@@ -73,7 +73,7 @@ namespace ghost3
 	}
 
 
-	void Ghost_SwapNPC(npc oldGhost, npc newGhost, bool copyHP)
+	void SwapNPC(npc oldGhost, npc newGhost, bool copyHP)
 	{
 		newGhost->X=oldGhost->X;
 		newGhost->Y=oldGhost->Y;
@@ -103,75 +103,75 @@ namespace ghost3
 	}
 
 
-	void Ghost_ReplaceNPC(npc oldGhost, npc newGhost, bool copyHP)
+	void ReplaceNPC(npc oldGhost, npc newGhost, bool copyHP)
 	{
-		Ghost_SwapNPC(oldGhost, newGhost, copyHP);
+		ghost3::SwapNPC(oldGhost, newGhost, copyHP);
 
 		oldGhost->X=384;
 		oldGhost->HP=-1000;
 	}
 
 
-	void Ghost_StoreDefenses(npc ghost, int storedDefense)
+	void StoreDefenses(npc ghost, int storedDefense)
 	{
-		for(int i=0; i<18; i++)
+		for(int i=0; i<43; ++i)
 			storedDefense[i]=ghost->Defense[i];
 	}
 
 
-	void Ghost_SetDefenses(npc ghost, int defense)
+	void SetDefenses(npc ghost, int defense)
 	{
-		for(int i=0; i<18; i++)
+		for(int i=0; i<43; ++i)
 			ghost->Defense[i]=defense[i];
 	}
 
 
-	void Ghost_SetAllDefenses(npc ghost, int defType)
+	void SetAllDefenses(npc ghost, int defType)
 	{
-		for(int i=0; i<18; i++)
+		for(int i=0; i<43; ++i)
 			ghost->Defense[i]=defType;
 	}
 
 
-	void Ghost_ForceDir(npc ghost, int dir)
+	void ForceDir(npc ghost, int dir)
 	{
 		ghost->Dir=dir;
-		Ghost_SetIFlag(ghost, GHFI_DIR_FORCED);
+		ghost3::SetIFlag(ghost, GHFI_DIR_FORCED);
 	}
 
 
-	void Ghost_ForceCSet(npc ghost, int cset)
+	void ForceCSet(npc ghost, int cset)
 	{
 		ghost->CSet=cset;
-		Ghost_SetIFlag(ghost, GHFI_CSET_FORCED);
+		ghost3::SetIFlag(ghost, GHFI_CSET_FORCED);
 	}
 
 	//TBA
 
-	void Ghost_StartFlashing(npc ghost)
+	void StartFlashing(npc ghost)
 	{
 		ghost->MiscFlags|=1000000b;
 	}
 
 
-	void Ghost_StartFlashing(npc ghost, int time)
+	void StartFlashing(npc ghost, int time)
 	{
-		//__Ghost_FlashCounter=time;
+		//FlashCounter=time;
 	}
 
 
-	void Ghost_StopFlashing(npc ghost)
+	void StopFlashing(npc ghost)
 	{
 		ghost->MiscFlags|=~1000000b;
 	}
 
 
-	void Ghost_StopKnockback(npc ghost)
+	void StopKnockback(npc ghost)
 	{
 	/*
-		if(__Ghost_KnockbackCounter>0)
+		if(KnockbackCounter>0)
 		{
-			__Ghost_KnockbackCounter=0;
+			KnockbackCounter=0;
 			ghost->Misc[GH_INTERNAL][GHI_IFLAGS]|=GHFI_KNOCKBACK_INTERRUPTED;
 		}
 	*/

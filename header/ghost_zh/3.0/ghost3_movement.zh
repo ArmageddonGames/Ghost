@@ -1,12 +1,12 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 2
+// Version 3.0.0 - Alpha 5
 
 namespace ghost3
 {
-	void Ghost_MoveXY(npc ghost, float xStep, float yStep, int imprecision)
+	void MoveXY(npc ghost, float xStep, float yStep, int imprecision)
 	{
 		// If this is sideview, most enemies can't move upward
-		if(yStep<0 && IsSideview() && !Ghost_FlagIsSet(ghost, GHF_NO_FALL))
+		if(yStep<0 && IsSideview() && !FlagIsSet(ghost, GHF_NO_FALL))
 			yStep=0;
 
 		// If moving more than 8 pixels along either axis, go 8 at a time
@@ -17,12 +17,12 @@ namespace ghost3
 			{
 				if(xStep>0)
 				{
-					Ghost_MoveXY(ghost, 8, 0, imprecision);
+					MoveXY(ghost, 8, 0, imprecision);
 					xStep-=8;
 				}
 				else
 				{
-					Ghost_MoveXY(ghost, -8, 0, imprecision);
+					MoveXY(ghost, -8, 0, imprecision);
 					xStep+=8;
 				}
 			}
@@ -30,12 +30,12 @@ namespace ghost3
 			{
 				if(yStep>0)
 				{
-					Ghost_MoveXY(ghost, 0, 8, imprecision);
+					MoveXY(ghost, 0, 8, imprecision);
 					yStep-=8;
 				}
 				else
 				{
-					Ghost_MoveXY(ghost, 0, -8, imprecision);
+					MoveXY(ghost, 0, -8, imprecision);
 					yStep+=8;
 				}
 			}
@@ -56,7 +56,7 @@ namespace ghost3
 			
 			// If the edge ends up on the same half-tile line it's already on,
 			// there's no need to check walkability
-			if(Ghost_CanMove(ghost, DIR_LEFT, -xStep, imprecision))
+			if(ghost3::CanMove(ghost, DIR_LEFT, -xStep, imprecision))
 				edge+=xStep;
 			else // Can't move all the way; snap to the grid
 				edge=(edge>>3)<<3;
@@ -71,7 +71,7 @@ namespace ghost3
 			startHT=Floor(edge/8);
 			endHT=Floor((edge+xStep)/8);
 			
-			if(Ghost_CanMove(ghost, DIR_RIGHT, xStep, imprecision))
+			if(ghost3::CanMove(ghost, DIR_RIGHT, xStep, imprecision))
 				edge+=xStep;
 			else
 				edge=(edge+6)-((edge+6)%8);
@@ -89,7 +89,7 @@ namespace ghost3
 			
 			// If the edge ends up on the same half-tile line it's already on,
 			// there's no need to check walkability
-			if(Ghost_CanMove(ghost, DIR_UP, -yStep, imprecision))
+			if(ghost3::CanMove(ghost, DIR_UP, -yStep, imprecision))
 				edge+=yStep;
 			else // Can't move all the way; snap to the grid
 				edge=(edge>>3)<<3;
@@ -104,17 +104,17 @@ namespace ghost3
 			startHT=Floor(edge/8);
 			endHT=Floor((edge+yStep)/8);
 			
-			if(Ghost_CanMove(ghost, DIR_DOWN, yStep, imprecision))
+			if(ghost3::CanMove(ghost, DIR_DOWN, yStep, imprecision))
 				edge+=yStep;
 			else
 				edge=(edge+6)-((edge+6)%8);
 			
 			ghost->Y=edge-edgeDiff;
 		}
-		if(Ghost_FlagIsSet(ghost, GHF_SET_DIRECTION) && (ghost->Misc[GH_INTERNAL][GHI_IFLAGS]&GHFI_DIR_FORCED)==0)
+		if(FlagIsSet(ghost, GHF_SET_DIRECTION) && (ghost->Misc[GH_INTERNAL][GHI_IFLAGS]&GHFI_DIR_FORCED)==0)
 		{
 			// Use 8 directions if 8-way flag is set
-			if(Ghost_FlagIsSet(ghost, GHF_8WAY))
+			if(FlagIsSet(ghost, GHF_8WAY))
 				ghost->Dir=AngleDir8(WrapAngle(ArcTan(xStep, yStep)) * RADIAN);
 			
 			// Otherwise, 4 directions
@@ -136,62 +136,66 @@ namespace ghost3
 				}
 			}
 			
-			Ghost_SetInternal(ghost, GHI_PREVX, ghost->X);
-			Ghost_SetInternal(ghost, GHI_PREVY, ghost->Y);
+			ghost3::SetInternal(ghost, GHI_PREVX, ghost->X);
+			ghost3::SetInternal(ghost, GHI_PREVY, ghost->Y);
 		}
 	}
 
-	void Ghost_Move(npc ghost, int dir, float step, int imprecision)
+	void Move(npc ghost, int dir, float step, int imprecision)
 	{
 		float xStep=0;
 		float yStep=0;
 
-		if(dir==DIR_UP)
-			yStep=-step;
-		else if(dir==DIR_DOWN)
-			yStep=step;
-		else if(dir==DIR_LEFT)
-			xStep=-step;
-		else if(dir==DIR_RIGHT)
-			xStep=step;
-		else if(dir==DIR_LEFTUP)
+		switch(dir)
 		{
-			xStep=-step*0.7071;
-			yStep=-step*0.7071;
+			case DIR_UP:
+				yStep=-step;
+				break;
+			case DIR_DOWN:
+				yStep=step;
+				break:
+			case DIR_LEFT:
+				xStep=-step;
+				break;
+			case DIR_RIGHT:
+				xStep=step;
+				break;
+			case DIR_LEFTUP:
+				xStep=-step*0.7071;
+				yStep=-step*0.7071;
+				break;
+			case DIR_RIGHTUP:
+				xStep=step*0.7071;
+				yStep=-step*0.7071;
+				break;
+			case DIR_LEFTDOWN:
+				xStep=-step*0.7071;
+				yStep=step*0.7071;
+				break;
+			case DIR_RIGHTDOWN:
+				xStep=step*0.7071;
+				yStep=step*0.7071;
+				break;
+			default:
+				printf("Invalid dir (%d) passed to ghost3::Move()\n", dir);
+				return;
 		}
-		else if(dir==DIR_RIGHTUP)
-		{
-			xStep=step*0.7071;
-			yStep=-step*0.7071;
-		}
-		else if(dir==DIR_LEFTDOWN)
-		{
-			xStep=-step*0.7071;
-			yStep=step*0.7071;
-		}
-		else if(dir==DIR_RIGHTDOWN)
-		{
-			xStep=step*0.7071;
-			yStep=step*0.7071;
-		}
-		else
-			return;
 
-		Ghost_MoveXY(ghost, xStep, yStep, imprecision);
+		MoveXY(ghost, xStep, yStep, imprecision);
 	}
 
-	void Ghost_MoveAtAngle(npc ghost, float angle, float step, int imprecision)
+	void MoveAtAngle(npc ghost, float angle, float step, int imprecision)
 	{
-		Ghost_MoveXY(ghost, VectorX(step, angle), VectorY(step, angle), imprecision);
+		MoveXY(ghost, VectorX(step, angle), VectorY(step, angle), imprecision);
 	}
 
-	void Ghost_MoveTowardLink(npc ghost, float step, int imprecision)
+	void MoveTowardLink(npc ghost, float step, int imprecision)
 	{
 		float angle=Angle(ghost->X+ghost->TileWidth*8, ghost->Y+ghost->TileHeight*8, Link->X+8, Link->Y+8);
-		Ghost_MoveXY(ghost, VectorX(step, angle), VectorY(step, angle), imprecision);
+		MoveXY(ghost, VectorX(step, angle), VectorY(step, angle), imprecision);
 	}
 
-	bool Ghost_CanMove(npc ghost, int dir, float step, int imprecision, bool inAir)
+	bool CanMove(npc ghost, int dir, float step, int imprecision, bool inAir)
 	{
 		if(step==0)
 			return true;
@@ -204,198 +208,205 @@ namespace ghost3
 		// More than 8 pixels? Step 8 at a time
 		while(step>8)
 		{
-			if(!__Ghost_CanMoveSingle(ghost, dir, step-8, imprecision, inAir))
+			if(!CanMoveSingle(ghost, dir, step-8, imprecision, inAir))
 				return false;
 			step-=8;
 		}
 		
-		return __Ghost_CanMoveSingle(ghost, dir, step, imprecision, inAir);
+		return CanMoveSingle(ghost, dir, step, imprecision, inAir);
 	}
 
 
 	// Check a single line for movability; needed when checking CanMove
 	// over more than 8 pixels
-	bool __Ghost_CanMoveSingle(npc ghost, int dir, float step, int imprecision, bool inAir)
+	bool CanMoveSingle(npc ghost, int dir, float step, int imprecision, bool inAir)
 	{
 		int i;
 		float leadingEdge; // X or Y position of the leading edge
 		int edgeSize; // Length of that edge (ignoring imprecision)
 		float edgeStart; // X or Y at the top or left end of the leading edge
 		int numCheckPoints; // Number of points to check, excluding endpoints
-		if(dir==DIR_LEFT)
+		switch(dir)
 		{
-			// The edge size is hitheight, because what the fuck saffith
-		// That was not okay. My eyes hurt now.
-			edgeSize=ghost->HitHeight;
-			
-			// The leading edge is the left edge of the hitbox
-			leadingEdge=ghost->X+ghost->HitXOffset-step;
-			
-			// The edge starts at the top of the hitbox
-			edgeStart=ghost->Y+ghost->HitYOffset;
-			
-			// Check every eight pixels; -1 cuts off the last point
-			numCheckPoints=edgeSize/8-1;
-			
-			// Check the non-end points
-			for(i=1; i<=numCheckPoints; i++)
+			case DIR_LEFT:
 			{
-				if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+i*8, inAir))
+				// The edge size is hitheight, because what the fuck saffith
+			// That was not okay. My eyes hurt now.
+				edgeSize=ghost->HitHeight;
+				
+				// The leading edge is the left edge of the hitbox
+				leadingEdge=ghost->X+ghost->HitXOffset-step;
+				
+				// The edge starts at the top of the hitbox
+				edgeStart=ghost->Y+ghost->HitYOffset;
+				
+				// Check every eight pixels; -1 cuts off the last point
+				numCheckPoints=edgeSize/8-1;
+				
+				// Check the non-end points
+				for(i=1; i<=numCheckPoints; ++i)
+				{
+					if(!CanMovePixel(ghost, leadingEdge, edgeStart+i*8, inAir))
+						return false;
+				}
+				
+				// Then the endpoints
+				if(!CanMovePixel(ghost, leadingEdge, edgeStart+imprecision, inAir))
 					return false;
+				if(!CanMovePixel(ghost, leadingEdge, edgeStart+edgeSize-imprecision-1, inAir))
+					return false;
+				
+				return true;
+			}
+			case DIR_RIGHT:
+			{
+				edgeSize=ghost->HitHeight;
+				leadingEdge=ghost->X+ghost->HitWidth+ghost->HitXOffset-1+step;
+				edgeStart=ghost->Y+ghost->HitYOffset;
+				numCheckPoints=edgeSize/8-1;
+				
+				for(i=1; i<=numCheckPoints; ++i)
+				{
+					if(!CanMovePixel(ghost, leadingEdge, edgeStart+i*8, inAir))
+						return false;
+				}
+				if(!CanMovePixel(ghost, leadingEdge, edgeStart+imprecision, inAir))
+					return false;
+				if(!CanMovePixel(ghost, leadingEdge, edgeStart+edgeSize-imprecision-1, inAir))
+					return false;
+				
+				return true;
+			}
+			case DIR_UP:
+			{
+				// Most enemies can't move upward on sideview screens
+				if(IsSideview())
+				{
+					unless (FlagIsSet(ghost, GHF_NO_FALL))
+					{
+						return false;
+					}
+				}
+				
+				edgeSize=ghost->HitWidth;
+				leadingEdge=ghost->Y+ghost->HitYOffset-step;
+				edgeStart=ghost->X+ghost->HitXOffset;
+				numCheckPoints=edgeSize/8-1;
+				
+				for(i=1; i<=numCheckPoints; ++i)
+				{
+					if(!CanMovePixel(ghost, edgeStart+i*8, leadingEdge, inAir))
+						return false;
+				}
+				
+				if(!CanMovePixel(ghost, edgeStart+imprecision, leadingEdge, inAir))
+					return false;
+				if(!CanMovePixel(ghost, edgeStart+edgeSize-imprecision-1, leadingEdge, inAir))
+					return false;
+				
+				return true;
+			}
+			case DIR_DOWN:
+			{
+				edgeSize=ghost->HitWidth;
+				leadingEdge=ghost->Y+ghost->HitHeight+ghost->HitYOffset-1+step;
+				edgeStart=ghost->X+ghost->HitXOffset;
+				numCheckPoints=edgeSize/8-1;
+				
+				for(i=1; i<=numCheckPoints; ++i)
+				{
+					if(!CanMovePixel(ghost, edgeStart+i*8, leadingEdge, inAir))
+						return false;
+				}
+				
+				if(!CanMovePixel(ghost, edgeStart+imprecision, leadingEdge, inAir))
+					return false;
+				if(!CanMovePixel(ghost, edgeStart+edgeSize-imprecision-1, leadingEdge, inAir))
+					return false;
+				
+				return true;
 			}
 			
-			// Then the endpoints
-			if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+imprecision, inAir))
-				return false;
-			if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+edgeSize-imprecision-1, inAir))
-				return false;
-			
-			return true;
-		}
-		else if(dir==DIR_RIGHT)
-		{
-			edgeSize=ghost->HitHeight;
-			leadingEdge=ghost->X+ghost->HitWidth+ghost->HitXOffset-1+step;
-			edgeStart=ghost->Y+ghost->HitYOffset;
-			numCheckPoints=edgeSize/8-1;
-			
-			for(i=1; i<=numCheckPoints; i++)
+			// Diagonal directions - move along one axis and test the other
+			case DIR_LEFTUP:
 			{
-				if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+i*8, inAir))
+				bool ret;
+				
+				ghost->X-=step;
+				ret=ghost3::CanMove(ghost, DIR_UP, step, imprecision, inAir);
+				ghost->X+=step;
+				if(!ret)
 					return false;
+				
+				ghost->Y-=step;
+				ret=ghost3::CanMove(ghost, DIR_LEFT, step, imprecision, inAir);
+				ghost->Y+=step;
+				return ret;
 			}
-			if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+imprecision, inAir))
-				return false;
-			if(!Ghost_CanMovePixel(ghost, leadingEdge, edgeStart+edgeSize-imprecision-1, inAir))
-				return false;
-			
-			return true;
-		}
-		else if(dir==DIR_UP)
-		{
-			// Most enemies can't move upward on sideview screens
-			if(IsSideview() && !Ghost_FlagIsSet(ghost, GHF_NO_FALL))
-
-				return false;
-			
-			edgeSize=ghost->HitWidth;
-			leadingEdge=ghost->Y+ghost->HitYOffset-step;
-			edgeStart=ghost->X+ghost->HitXOffset;
-			numCheckPoints=edgeSize/8-1;
-			
-			for(i=1; i<=numCheckPoints; i++)
+			case DIR_RIGHTUP:
 			{
-				if(!Ghost_CanMovePixel(ghost, edgeStart+i*8, leadingEdge, inAir))
+				bool ret;
+				
+				ghost->X+=step;
+				ret=ghost3::CanMove(ghost, DIR_UP, step, imprecision, inAir);
+				ghost->X-=step;
+				if(!ret)
 					return false;
+				
+				ghost->Y-=step;
+				ret=ghost3::CanMove(ghost, DIR_RIGHT, step, imprecision, inAir);
+				ghost->Y+=step;
+				return ret;
 			}
-			
-			if(!Ghost_CanMovePixel(ghost, edgeStart+imprecision, leadingEdge, inAir))
-				return false;
-			if(!Ghost_CanMovePixel(ghost, edgeStart+edgeSize-imprecision-1, leadingEdge, inAir))
-				return false;
-			
-			return true;
-		}
-		else if(dir==DIR_DOWN)
-		{
-			edgeSize=ghost->HitWidth;
-			leadingEdge=ghost->Y+ghost->HitHeight+ghost->HitYOffset-1+step;
-			edgeStart=ghost->X+ghost->HitXOffset;
-			numCheckPoints=edgeSize/8-1;
-			
-			for(i=1; i<=numCheckPoints; i++)
+			case DIR_LEFTDOWN:
 			{
-				if(!Ghost_CanMovePixel(ghost, edgeStart+i*8, leadingEdge, inAir))
+				bool ret;
+				
+				ghost->X-=step;
+				ret=ghost3::CanMove(ghost, DIR_DOWN, step, imprecision, inAir);
+				ghost->X+=step;
+				if(!ret)
 					return false;
+				
+				ghost->Y+=step;
+				ret=ghost3::CanMove(ghost, DIR_LEFT, step, imprecision, inAir);
+				ghost->Y-=step;
+				return ret;
 			}
-			
-			if(!Ghost_CanMovePixel(ghost, edgeStart+imprecision, leadingEdge, inAir))
+			case DIR_RIGHTDOWN:
+			{
+				bool ret;
+				
+				ghost->X+=step;
+				ret=ghost3::CanMove(ghost, DIR_DOWN, step, imprecision, inAir);
+				ghost->X-=step;
+				if(!ret)
+					return false;
+				
+				ghost->Y+=step;
+				ret=ghost3::CanMove(ghost, DIR_RIGHT, step, imprecision, inAir);
+				ghost->Y-=step;
+				return ret;
+			}
+			default: // Invalid direction
 				return false;
-			if(!Ghost_CanMovePixel(ghost, edgeStart+edgeSize-imprecision-1, leadingEdge, inAir))
-				return false;
-			
-			return true;
 		}
-		
-		// Diagonal directions - move along one axis and test the other
-		else if(dir==DIR_LEFTUP)
-		{
-			bool ret;
-			
-			ghost->X-=step;
-			ret=Ghost_CanMove(ghost, DIR_UP, step, imprecision, inAir);
-			ghost->X+=step;
-			if(!ret)
-				return false;
-			
-			ghost->Y-=step;
-			ret=Ghost_CanMove(ghost, DIR_LEFT, step, imprecision, inAir);
-			ghost->Y+=step;
-			return ret;
-		}
-		else if(dir==DIR_RIGHTUP)
-		{
-			bool ret;
-			
-			ghost->X+=step;
-			ret=Ghost_CanMove(ghost, DIR_UP, step, imprecision, inAir);
-			ghost->X-=step;
-			if(!ret)
-				return false;
-			
-			ghost->Y-=step;
-			ret=Ghost_CanMove(ghost, DIR_RIGHT, step, imprecision, inAir);
-			ghost->Y+=step;
-			return ret;
-		}
-		else if(dir==DIR_LEFTDOWN)
-		{
-			bool ret;
-			
-			ghost->X-=step;
-			ret=Ghost_CanMove(ghost, DIR_DOWN, step, imprecision, inAir);
-			ghost->X+=step;
-			if(!ret)
-				return false;
-			
-			ghost->Y+=step;
-			ret=Ghost_CanMove(ghost, DIR_LEFT, step, imprecision, inAir);
-			ghost->Y-=step;
-			return ret;
-		}
-		else if(dir==DIR_RIGHTDOWN)
-		{
-			bool ret;
-			
-			ghost->X+=step;
-			ret=Ghost_CanMove(ghost, DIR_DOWN, step, imprecision, inAir);
-			ghost->X-=step;
-			if(!ret)
-				return false;
-			
-			ghost->Y+=step;
-			ret=Ghost_CanMove(ghost, DIR_RIGHT, step, imprecision, inAir);
-			ghost->Y-=step;
-			return ret;
-		}
-		else // Invalid direction
-			return false;
 	}
 
-	bool Ghost_CanMove(npc ghost, int dir, float step, int imprecision)
+	bool CanMove(npc ghost, int dir, float step, int imprecision)
 	{
-		return Ghost_CanMove(ghost, dir, step, imprecision, ghost->Z>0);
+		return ghost3::CanMove(ghost, dir, step, imprecision, ghost->Z>0);
 	}
 
-	bool Ghost_CanMovePixel(npc ghost, int x, int y, bool inAir)
+	bool CanMovePixel(npc ghost, int x, int y, bool inAir)
 	{
 		if(x<0 || x>255 || y<0 || y>175)
-			return Ghost_FlagIsSet(ghost, GHF_MOVE_OFFSCREEN);
+			return FlagIsSet(ghost, GHF_MOVE_OFFSCREEN);
 		
 		int combo=ComboAt(x, y);
 		
 		// "No enemy" flags and combos
-		if(!Ghost_FlagIsSet(ghost, GHF_IGNORE_NO_ENEMY))
+		if(!FlagIsSet(ghost, GHF_IGNORE_NO_ENEMY))
 		{
 			if(Screen->ComboT[combo]==CT_NOENEMY)
 				return false;
@@ -406,7 +417,7 @@ namespace ghost3
 				
 			
 			// Flying
-			if(Ghost_FlagIsSet(ghost, GHF_FLYING_ENEMY))
+			if(FlagIsSet(ghost, GHF_FLYING_ENEMY))
 			{
 				if(Screen->ComboT[combo]==CT_NOFLYZONE)
 					return false;
@@ -429,24 +440,24 @@ namespace ghost3
 			}
 		}
 		// Restricted to water
-		if(Ghost_FlagIsSet(ghost, GHF_DEEP_WATER_ONLY))
+		if(FlagIsSet(ghost, GHF_DEEP_WATER_ONLY))
 			return IsWater(combo);
-		if(Ghost_FlagIsSet(ghost, GHF_WATER_ONLY))
+		if(FlagIsSet(ghost, GHF_WATER_ONLY))
 			return IsWater(combo) || Screen->ComboT[combo]==CT_SHALLOWWATER;
 		// Water and pit walkability override solidity checking
 		if(IsWater(combo))
-			return Ghost_FlagIsSet(ghost, GHF_IGNORE_WATER);
+			return FlagIsSet(ghost, GHF_IGNORE_WATER);
 		if(IsPit(combo))
-			return Ghost_FlagIsSet(ghost, GHF_IGNORE_PITS);
+			return FlagIsSet(ghost, GHF_IGNORE_PITS);
 		// Ignore solidity: always OK
-		if(Ghost_FlagIsSet(ghost, GHF_IGNORE_SOLIDITY))
+		if(FlagIsSet(ghost, GHF_IGNORE_SOLIDITY))
 			return true;
 		
 		// Full tile movement: Only if the whole tile is walkable
 		else 
 		{
-			if(Ghost_FlagIsSet(ghost, GHF_FULL_TILE_MOVEMENT))
-				return __FullTileWalkable(x, y, Ghost_FlagIsSet(ghost, GHF_MOVE_OFFSCREEN));
+			if(FlagIsSet(ghost, GHF_FULL_TILE_MOVEMENT))
+				return __FullTileWalkable(x, y, FlagIsSet(ghost, GHF_MOVE_OFFSCREEN));
 			
 			// All others: Only if the pixel is walkable
 			else
@@ -456,13 +467,15 @@ namespace ghost3
 		}
 	}
 
-	bool Ghost_CanMovePixel(npc ghost, int x, int y)
+	bool CanMovePixel(npc ghost, int x, int y)
 	{
-		return Ghost_CanMovePixel(ghost, x, y, ghost->Z>0);
+		return ghost3::CanMovePixel(ghost, x, y, ghost->Z>0);
 	}
 
 	// Determines the direction to Link
-	int __Ghost_LinedUp(npc ghost, int range, bool eightWay)
+	
+	//! Use internal npc->LinedUp(npc,bool) -Z
+	int LinedUp(npc ghost, int range, bool eightWay)
 	{
 		// Up or down
 		if(Abs(Link->X-ghost->X)<=range)
@@ -528,11 +541,11 @@ namespace ghost3
 	}
 
 	//this assumes that a step of 2.5 pixels per frame is 2.5, not 250
-	bool Ghost_CanMoveAtAngle(npc ghost, float angle, float step, int imprecision)
+	bool CanMoveAtAngle(npc ghost, float angle, float step, int imprecision)
 	{
 		for ( int q = Max((step), 1); q > 0; --q )
 		{
-			if(Ghost_CanMovePixel(ghost, VectorX(q, angle), VectorY(q, angle), ghost->Z>0))
+			if(ghost3::CanMovePixel(ghost, VectorX(q, angle), VectorY(q, angle), ghost->Z>0))
 			{
 				return true;
 			}
@@ -540,11 +553,11 @@ namespace ghost3
 		return false;
 	}
 
-	bool Ghost_CanMoveAtAngle(npc ghost, float angle, float step)
+	bool CanMoveAtAngle(npc ghost, float angle, float step)
 	{
 		for ( int q = Max((step), 1); q > 0; --q )
 		{
-			if(!Ghost_CanMovePixel(ghost, VectorX(q, angle), VectorY(q, angle), ghost->Z>0))
+			if(!CanMovePixel(ghost, VectorX(q, angle), VectorY(q, angle), ghost->Z>0))
 			{
 				return true;
 			}

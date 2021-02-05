@@ -1,34 +1,31 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 2
+// Version 3.0.0 - Alpha 5
 
 namespace ghost3
 {
-	using namespace flags;
-	namespace flags
+	#option BINARY_32BIT on
+	// EWeapon flags
+	enum
 	{
-		#option BINARY_32BIT on
-		// EWeapon flags
-		enum
-		{
-			EWF_UNBLOCKABLE = 		000000000001b, //0.0001
-			EWF_ROTATE = 			000000000010b, //0.0002
-			EWF_ROTATE_360 = 		000000000100b, //0.0004
-			EWF_SHADOW = 			000000001000b, //0.0008
-			EWF_FLICKER = 			000000010000b, //0.0016
-			EWF_NO_COLLISION = 		000000100000b, //0.0032
-			EWF_FAKE_Z = 			000001000000b, //0.0064
-			EWF_ALIVEOFFSCREEN = 		000010000000b, //0.0128
-			EWF_PIERCING = 			000100000000b  //0.0256
-		};
+		EWF_UNBLOCKABLE = 		000000000001b, //0.0001
+		EWF_ROTATE = 			000000000010b, //0.0002
+		EWF_ROTATE_360 = 		000000000100b, //0.0004
+		EWF_SHADOW = 			000000001000b, //0.0008
+		EWF_FLICKER = 			000000010000b, //0.0016
+		EWF_NO_COLLISION = 		000000100000b, //0.0032
+		EWF_FAKE_Z = 			000001000000b, //0.0064
+		EWF_ALIVEOFFSCREEN = 		000010000000b, //0.0128
+		EWF_PIERCING = 			000100000000b  //0.0256
+	};
 
-		// Internal EWeapon flags
-		enum
-		{
-			EWFI_DEAD = 			00100000000000000000b,
-			EWFI_DEATH_EFFECT_DONE = 	01000000000000000000b,
-			EWFI_INTERNAL	= 		11100000000000000000b
-		};
-	}
+	// Internal EWeapon flags
+	enum
+	{
+		EWFI_DEAD = 			00100000000000000000b,
+		EWFI_DEATH_EFFECT_DONE = 	01000000000000000000b,
+		EWFI_INTERNAL	= 		11100000000000000000b
+	};
+	
 	// Arguments to SetEWeaponMovement()
 	enum EW_MovementType
 	{
@@ -1645,7 +1642,7 @@ namespace ghost3
 			
 			// First, find a free FFC
 			ffcID=FindUnusedFFC();
-			if(ffcID==0)
+			unless(ffcID)
 			{
 				// None available; just remove the weapon
 				this->DeadState=0;
@@ -1657,10 +1654,11 @@ namespace ghost3
 			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			
 			// Then run the script
-			f->Data=GH_INVISIBLE_COMBO;
+			f->Data=Game->Ghost[GHV_SETTINGS_COMBO_ID];
 			f->X=CenterX(this)-8;
 			f->Y=CenterY(this)-8;
-			
+			f->Flags[FFCF_ETHEREAL] = (Game->Ghost[GHV_LEG_ETHEREAL]) ? true : false;
+			if (Game->Ghost[GHV_CLEAR_FFC_LINK_DEP]) F->Link = 0;
 			f->Script=args[GWI_DEATHARG];
 			f->InitD[0]=this->UID;
 		}
@@ -1706,7 +1704,7 @@ namespace ghost3
 				}
 				
 				++args[GWI_PARTICLETIMER];
-				if (args[GWI_PARTICLETIMER] % prototype->Misc[GWD_FREQ] == 0)
+				unless ((args[GWI_PARTICLETIMER] % prototype->Misc[GWD_FREQ]))
 				{
 				
 					if(this->Extend==3)
@@ -1792,7 +1790,7 @@ namespace ghost3
 		wpn->Damage=damage;
 		wpn->Angular=false;
 		
-		if((flags&EWF_UNBLOCKABLE)!=0)
+		if((flags&EWF_UNBLOCKABLE))
 			wpn->Dir=UnblockableDir(dir);
 		else
 			wpn->Dir=dir;
@@ -1803,7 +1801,7 @@ namespace ghost3
 		if((flags&EWF_NO_COLLISION)!=0)
 			wpn->CollDetection=false;
 
-		if((flags&EWF_ROTATE)!=0)
+		if((flags&EWF_ROTATE))
 			SetEWeaponRotation(wpn);
 		
 		wpn->Script = Game->GetEWeaponScript("GhostWeapon");
@@ -2031,10 +2029,18 @@ namespace ghost3
 	{
 		unless (wpn->Script == Game->GetEWeaponScript("DummyWeapon") || wpn->Script == Game->GetEWeaponScript("GhostWeapon")) wpn->Script = Game->GetEWeaponScript("GhostWeapon");
 		// Make sure the script number is valid
-		if(type==EWD_RUN_SCRIPT||type==EWD_RUN_SCRIPTLW||type==EWD_RUN_SCRIPTEW)
+		switch(type)
 		{
-			if(arg<1 || arg>511)
+			case EWD_RUN_SCRIPT:
+			case EWD_RUN_SCRIPTLW:
+			case EWD_RUN_SCRIPTEW:
+			{
+				if(arg<1 || arg>511)
 				type=EWD_VANISH;
+				break;
+			}
+			
+			
 		}
 		
 		unless(wpn->Misc[GWM_SETTINGS])
@@ -2054,7 +2060,10 @@ namespace ghost3
 	// Set an eweapon to spawn more eweapons on death
 	void SetEWeaponDeathEffect(eweapon wpn, eweapon prototype, int numShots, int spreadType, float angle)
 	{
-		unless (wpn->Script == Game->GetEWeaponScript("DummyWeapon") || wpn->Script == Game->GetEWeaponScript("GhostWeapon")) wpn->Script = Game->GetEWeaponScript("GhostWeapon");
+		unless (wpn->Script == Game->GetEWeaponScript("DummyWeapon") || wpn->Script == Game->GetEWeaponScript("GhostWeapon"))
+		{
+			wpn->Script = Game->GetEWeaponScript("GhostWeapon");
+		}
 		unless(wpn->Misc[GWM_SETTINGS])
 		{
 			SetExInit(wpn, GWMI_PROTOTYPEUID, prototype->UID);
@@ -2078,13 +2087,12 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		
-		if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
+		if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360))
 		{
 			wpn->DrawXOffset=1000;
 			
 			// Flickering? Nothing to do here.
-			if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0 &&
-			   get_bit(Game->Time,10b/10000))
+			if(get_bit(args[GWI_FLAGS], EWF_FLICKER) && get_bit(Game->Time,10b/10000))
 				return;
 			
 			// This works a little differently than in UpdateEWeapon(). Since
@@ -2094,34 +2102,44 @@ namespace ghost3
 			float angle;
 			
 			if(wpn->Angular)
+			{
 				angle=RadtoDeg(wpn->Angle);
+			}
 			else
 			{
 				int dir=NormalizeDir(wpn->Dir);
-				
-				if(dir==DIR_UP)
-					angle=-90;
-				else if(dir==DIR_RIGHTUP)
-					angle=-45;
-				else if(dir==DIR_RIGHT)
-					angle=0;
-				else if(dir==DIR_RIGHTDOWN)
-					angle=45;
-				else if(dir==DIR_DOWN)
-					angle=90;
-				else if(dir==DIR_LEFTDOWN)
-					angle=135;
-				else if(dir==DIR_LEFT)
-					angle=180;
-				else // DIR_LEFTUP
-					angle=-135;
+				switch(dir)
+				{
+					case DIR_UP:
+						angle=-90; break;
+					case DIR_RIGHTUP:
+						angle=-45; break;
+					case DIR_RIGHT:
+						angle=0; break;
+					case DIR_RIGHTDOWN:
+						angle=45; break;
+					case DIR_DOWN:
+						angle=90; break;
+					case DIR_LEFTDOWN: 
+						angle=135; break;
+					case DIR_LEFT:
+						angle=180; break;
+					case DIR_LEFTUP:
+						angle=-135; break;
+					default: printf("Invalid dir (%d) supplied to ghost3::UpdateEWeaponVisualFlags\n", dir); break;
+				}
 			}
 			
 			int flip;
-			if(angle>=0 && angle<180)
-				flip=0;
-			else
-				flip=2;
+			switch(angle)
+			{
+				case 0...179:
+					flip = 0;
+					break;
+				default: 
+					flip = 2;
+					break;
+			}
 			
 			// Currently, these are always drawn on layer 4.
 			// That should probably be changed...
@@ -2218,14 +2236,23 @@ namespace ghost3
 	void SetEWeaponRotation(eweapon wpn, int dir)
 	{
 		dir=NormalizeDir(dir);
-		if(dir==DIR_UP || dir==DIR_RIGHTUP || dir==DIR_LEFTUP)
-			wpn->Flip=0;
-		else if(dir==DIR_DOWN || dir==DIR_RIGHTDOWN || dir==DIR_LEFTDOWN)
-			wpn->Flip=3;
-		else if(dir==DIR_LEFT)
-			wpn->Flip=7;
-		else // Right
-			wpn->Flip=4;
+		switch(dir)
+		{
+			
+			case DIR_UP:
+			case DIR_RIGHTUP:
+			case DIR_LEFTUP:
+				wpn->Flip=0; break;
+			case DIR_DOWN:
+			case DIR_RIGHTDOWN:
+			case DIR_LEFTDOWN:
+				wpn->Flip=3; break;
+			case DIR_LEFT:
+				wpn->Flip=7; break;
+			case DIR_RIGHT:
+				wpn->Flip=4; break;
+			default: printf("Invalid dir (%d) passed to SetEWeaponRotation().\n", dir); break;
+		}
 	}
 
 
@@ -2241,78 +2268,88 @@ namespace ghost3
 	// Get the standard sprite for this weapon type
 	int GetDefaultEWeaponSprite(int weaponID)
 	{
-		if(weaponID==EW_FIREBALL || weaponID==EW_FIREBALL2)
-			return 17;
-		else if(weaponID==EW_ROCK)
-			return 18;
-		else if(weaponID==EW_ARROW)
-			return 19;
-		else if(weaponID==EW_FIRE)
-			return 35;
-		else if(weaponID==EW_FIRE2)
-			return 81;
-		else if(weaponID==EW_FIRETRAIL)
-			return 80;
-		else if(weaponID==EW_MAGIC)
-			return 21;
-		else if(weaponID==EW_BEAM)
-			return 20;
-		else if(weaponID==EW_WIND)
-			return 36;
-		else if(weaponID==EW_BOMB)
-			return 76;
-		else if(weaponID==EW_SBOMB)
-			return 77;
-		else if(weaponID==EW_BRANG)
+		switch(weaponID)
 		{
-			// The sprite depends on what boomerang Link has, so check his inventory
-			int maxLevel=0;
-			itemdata id;
-
-			for(int i=0; i<256; i++)
+			case EW_FIREBALL:
+			case EW_FIREBALL2:
+				return SP_FIREBALL;
+			case EW_ROCK:	
+				return SP_ROCK;
+			case EW_ARROW:
+				return SP_ARROW_ENEMY;
+			case EW_FIRE:
+				return SP_FIRE_ENEMY;
+			case EW_FIRE2:
+				return SP_FIRE2_ENEMY;
+			case EW_FIRETRAIL:
+				return SP_FIRETRAIL;
+			case EW_MAGIC)
+				return SP_MAGIC_ENEMY;
+			case EW_BEAM:
+				return SP_SWORD_ENEMY;
+			case EW_WIND:
+				return SP_WIND;
+			case EW_BOMB:
+				return SP_BOMB_ENEMY;
+			case EW_SBOMB:
+				return SP_SBOMB_ENEMY;;
+			case EW_BRANG:
 			{
-				if(!Link->Item[i])
-					continue;
+				// The sprite depends on what boomerang Link has, so check his inventory
+				int maxLevel=0;
+				itemdata id;
 
-				id=Game->LoadItemData(i);
-
-				if(id->Family!=IC_BRANG)
-					continue;
-
-				if(id->Level>maxLevel)
+				for(int i=0; i<256; i++)
 				{
-					maxLevel=id->Level;
-					if(maxLevel>=3) // Any higer won't matter
-						break;
+					if(!Link->Item[i])
+						continue;
+
+					id=Game->LoadItemData(i);
+
+					if(id->Family!=IC_BRANG)
+						continue;
+
+					if(id->Level>maxLevel)
+					{
+						maxLevel=id->Level;
+						if(maxLevel>=3) // Any higer won't matter
+							break;
+					}
+
 				}
 
+				if(maxLevel<=1)
+					return SP_BRANG1;
+				else if(maxLevel==2)
+					return SP_BRANG2;
+				else
+					return SP_BRANG3;
 			}
-
-			if(maxLevel<=1)
-				return 4;
-			else if(maxLevel==2)
-				return 5;
-			else
-				return 6;
+			default: return NULL;
 		}
-		else
-			return 0;
 	}
 
 
 	// Find the sound normally made by weapons of this type
 	int GetDefaultEWeaponSound(int weaponID)
 	{
-		 if(weaponID==EW_FIREBALL || weaponID==EW_FIREBALL2)
-			return 40;
-		else if(weaponID==EW_MAGIC || weaponID==EW_WIND)
-			return 32;
-		else if(weaponID==EW_FIRE || weaponID==EW_FIRE2 || weaponID==EW_FIRETRAIL)
-			return 13;
-		else if(weaponID==EW_ROCK)
-			return 51;
-		else
-			return 0;
+		switch(weaponID)
+		{
+			case EW_FIREBALL:
+			case EW_FIREBALL2:
+				return SFX_FIREBALL;
+			case EW_MAGIC:
+			case EW_WIND:
+				return SFX_WAND;
+		`	case EW_FIRE:
+			case EW_FIRE2:
+			case EW_FIRETRAIL:
+				return SFX_FIRE;
+			case EW_ROCK:
+				return SFX_ROCK;
+			default:
+				return NULL;
+		}
 	}
 
 
@@ -2322,17 +2359,16 @@ namespace ghost3
 	{
 		eweapon wpn = Screen->LoadEWeaponByUID(weaponID);
 		return wpn;
-		
 	}
 
-
+	//! This should be a bitwise flag of the weapon's Misc on an appropriate index!!! -Z
 	// Is this a GHost.zh-controlled weapon?
 	bool IsGHostZHEWeapon(eweapon wpn)
 	{
 		return (wpn->Script == Game->GetEWeaponScript("GhostWeapon"));
 	}
 
-
+	//! This should be a bitwise flag of the weapon's Misc on an appropriate index!!! -Z
 	// Is this a dummy weapon?
 	bool IsDummyEWeapon(eweapon wpn)
 	{
@@ -2461,25 +2497,18 @@ namespace ghost3
 	// Get the unblockable version (8-15) of a direction
 	int UnblockableDir(int dir)
 	{
-		if(dir==DIR_UP)
-			return 8;
-		if(dir==DIR_DOWN)
-			return 12;
-		if(dir==DIR_LEFT)
-			return 14;
-		if(dir==DIR_RIGHT)
-			return 10;
-		if(dir==DIR_LEFTUP)
-			return 15;
-		if(dir==DIR_RIGHTUP)
-			return 9;
-		if(dir==DIR_LEFTDOWN)
-			return 13;
-		if(dir==DIR_RIGHTDOWN)
-			return 11;
-		
-		// Should never get here
-		return dir;
+		switch(dir)
+		{
+			case DIR_UP: return 8;
+			case DIR_DOWN: return 12;
+			case DIR_LEFT: return 14;
+			case DIR_RIGHT: return 10;
+			case DIR_LEFTUP: return 15;
+			case DIR_RIGHTUP: return 9;
+			case DIR_LEFTDOWN: return 13;
+			case DIR_RIGHTDOWN: return 11;
+			default: return dir; // Should never get here
+		}
 	}
 	
 	bool IsInitialized(eweapon e)
