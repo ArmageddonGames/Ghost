@@ -38,6 +38,7 @@ npc script G3_Example1
 					SetEWeaponLifespan(e, EWL_TIMER, 90);
 					SetEWeaponDeathEffect(e, EWD_4_FIREBALLS_DIAG, -1);
 					SetEWeaponSparkle(e, particle);
+					SetEWeaponAttribute(e, GWI_PARTICLEOFFSET, 2);
 				}
 			}
 			else
@@ -53,7 +54,10 @@ npc script G3_Example1
 						SetEWeaponMovement(e, EWM_SINE_WAVE, 8, 6);
 						eweapon e2 = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
 						SetEWeaponMovement(e2, EWM_SINE_WAVE, 8, 6);
-						e->Misc[GWM_INITMISC1] = 180;
+						SetEWeaponAttribute(e2, GWI_MISC1, 120);
+						eweapon e3 = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
+						SetEWeaponMovement(e3, EWM_SINE_WAVE, 8, 6);
+						SetEWeaponAttribute(e3, GWI_MISC1, 240);
 						repeat(5) Ghost_Waitframe(this, GHD_EXPLODE, true);
 					}
 				}
@@ -157,23 +161,17 @@ npc script G3_Example5
 		int internal[8];
 		GhostInit(this, internal);
 		int shotcounter;
-		int storex = this->X;
-		int storey = this->Y;
 		while(true)
 		{
 			this->HaltingWalk({this->Rate, this->Homing, 0, this->Haltrate, 60});
-			if (storex == this->X && storey == this->Y) ++shotcounter;
-			else shotcounter = 0;
-			storex = this->X;
-			storey = this->Y;
 			if (this-> Halt == 20)
 			{
 				eweapon e = FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, 0, this->Attributes[6], this->WeaponDamage, this->WeaponSprite, -1, 0);
 				int flags = EWMF_DIE;
 				if (this->Attributes[9] == 1 || this->Attributes[9] == 3) flags |= EWMF_SPEEDBOUNCE;
 				if (this->Attributes[9] == 2 || this->Attributes[9] == 3) flags |= EWMF_SLOWBOUNCE;
-				if (this->Attributes[8] == 1) flags |= EWMF_SPEEDSCALE;
-				if (this->Attributes[8] == 2) flags |= EWMF_SLOWSCALE;
+				if (this->Attributes[8] == 1) flags |= EWMF_SCALEUP;
+				if (this->Attributes[8] == 2) flags |= EWMF_SCALEDOWN;
 				SetEWeaponMovement(e, EWM_WALLBOUNCE, this->Attributes[7], flags);
 				SetEWeaponDeathEffect(e, EWD_SBOMB_EXPLODE, this->WeaponDamage*2);
 			}

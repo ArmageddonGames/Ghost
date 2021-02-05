@@ -53,22 +53,25 @@ namespace ghost3
 	// Flags used by certain EWeapon movement types
 	enum
 	{
-		EWMF_DIE =         000001b,
-		EWMF_BOUNCE =      000010b,
-		EWMF_KEEPMOVING =  000010b,
-		EWMF_SLOWBOUNCE =  000100b,
-		EWMF_SPEEDBOUNCE = 001000b,
-		EWMF_SPEEDSCALE =  010000b,
-		EWMF_SLOWSCALE =   100000b
+		EWMF_DIE =         0000001b,  //1
+		EWMF_BOUNCE =      0000010b,  //2
+		EWMF_KEEPMOVING =  0000010b,  //2
+		EWMF_SLOWBOUNCE =  0000100b,  //4
+		EWMF_SPEEDBOUNCE = 0001000b,  //8
+		EWMF_SCALEUP =     0010000b,  //16
+		EWMF_SCALEDOWN =   0100000b,  //32
+		EWMF_REAIM =       1000000b   //64
 	};
 
 	// Arguments to SetEWeaponLifespan()
 	enum
 	{
-		EWL_NONE,
-		EWL_TIMER,
-		EWL_NEAR_LINK,
-		EWL_SLOW_TO_HALT
+		EWL_NONE,                //0
+		EWL_TIMER,               //1
+		EWL_NEAR_LINK,           //2
+		EWL_SLOW_TO_HALT,        //3
+		EWL_SHRINK,              //4
+		EWL_GROW                 //5
 	};
 
 	// Arguments to SetEWeaponDeathEffect()
@@ -102,12 +105,12 @@ namespace ghost3
 	// Prototype-based version
 	enum
 	{
-		EWD_EVEN = 1,
-		EWD_RANDOM,
-		EWD_AIMED
+		EWD_EVEN =     1,
+		EWD_RANDOM,  //2
+		EWD_AIMED    //3
 	};
 
-	enum
+	enum GW_INTERNAL
 	{
 		GWI_TRUEX,
 		GWI_TRUEY,
@@ -127,31 +130,48 @@ namespace ghost3
 		GWI_DUMMYSHOTS,
 		GWI_DUMMYTYPE,
 		GWI_PARTICLEWPN,
-		GWI_PARTICLETIMER
+		GWI_PARTICLETIMER,
+		GWI_LIFEMISC,
+		GWI_DEATHMISC,
+		GWI_DRAWXOFFSET,
+		GWI_DRAWYOFFSET,
+		GWI_HITXOFFSET,
+		GWI_HITYOFFSET,
+		GWI_HITWIDTH,
+		GWI_HITHEIGHT,
+		GWI_PARTICLEOFFSET
 	};
 
 	enum
 	{
-		GWD_FREQ = 25,
-		GWD_SFX,
-		GWD_STEP,
-		GWD_SPRITE
+		GWD_FREQ =    26,
+		GWD_SFX,    //27
+		GWD_STEP,   //28
+		GWD_SPRITE  //29
 	};
 
 	const bool GHC_FIX_EWM_THROW = true;
 	const bool GHC_FIX_EWM_FALL = true;
 	const bool GHC_WEAPONS_HIT_PLATFORMS = true;
 	
-	enum
+	
+	enum GW_EXINIT //InitD Indices for dataweapons.
 	{
-		GWM_PARTICLEUID = 25,
-		GWM_INITMISC2,
-		GWM_INITMISC1,
-		GWM_PROTOTYPEMISC,
-		GWM_PROTOTYPESHOTS,
-		GWM_PROTOTYPEUID,
-		GWM_SETTINGS
+		GWMI_INITMISC1,
+		GWMI_INITMISC2,
+		GWMI_INITMISC3,
+		GWMI_PROTOTYPEMISC,
+		GWMI_PROTOTYPESHOTS,
+		GWMI_PROTOTYPEUID,
+		GWMI_PARTICLEUID,
+		GWMI_PARTICLETIMER,
+		GWMI_INITLIFEMISC,
+		GWMI_INITDEATHMISC,
+		GWMI_PARTICLEOFFSET
 	};
+	
+	const int GWM_INITSTUFF = 30; //Misc to give us more InitD's without using a thousand miscs.
+	const int GWM_SETTINGS  = 31; //Misc to access internal eweapon variables.
 	
 	const int LW_GHOSTDEATH = 40;
 	const int EW_GHOSTDEATH = 40;
@@ -183,9 +203,35 @@ namespace ghost3
 	{
 		void run(int movement, int movarg1, int movarg2, int lifespan, int lifearg, int death, int deatharg, int flags)
 		{
-			int args[] = {this->X, this->Y, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, this->Misc[GWM_INITMISC1], this->Misc[GWM_INITMISC2], this->Misc[GWM_INITMISC2], this->Misc[GWM_PROTOTYPEUID], 0, this->Misc[GWM_PROTOTYPESHOTS], 0, this->Misc[GWM_PARTICLEUID], 0};
-			args[GWI_DUMMYANGLE] = (this->Misc[GWM_PROTOTYPEMISC]%10)-6.2832;
-			args[GWI_DUMMYTYPE] = ((this->Misc[GWM_PROTOTYPEMISC]-args[GWI_DUMMYANGLE])/100)>>0;
+			int args[] = {this->X, this->Y, movement, movarg1, movarg2, lifespan, lifearg, death, deatharg, flags, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, this->DrawXOffset, this->DrawYOffset, this->HitXOffset, this->HitYOffset, this->HitWidth, this->HitHeight, 0};
+			if (this->Misc[GWM_INITSTUFF])
+			{
+				lweapon data = Screen->LoadLWeaponByUID(this->Misc[GWM_INITSTUFF]);
+				if (data->isValid())
+				{
+					args[GWI_MISC1] = data->InitD[GWMI_INITMISC1];
+					args[GWI_MISC2] = data->InitD[GWMI_INITMISC2];
+					args[GWI_MISC3] = data->InitD[GWMI_INITMISC3];
+					args[GWI_DUMMYANGLE] = ((data->InitD[GWMI_PROTOTYPEMISC]%10)-6.2832);
+					args[GWI_DUMMYTYPE]  = ((data->InitD[GWMI_PROTOTYPEMISC]-args[GWI_DUMMYANGLE])/100)>>0;
+					args[GWI_DUMMYWPN]   = data->InitD[GWMI_PROTOTYPEUID];
+					args[GWI_DUMMYSHOTS] = data->InitD[GWMI_PROTOTYPESHOTS];
+					args[GWI_PARTICLEWPN] = data->InitD[GWMI_PARTICLEUID];
+					if (data->Misc[GWM_INITSTUFF]) //Pre-empting this...
+					{
+						lweapon data2 = Screen->LoadLWeaponByUID(data->Misc[GWM_INITSTUFF]);
+						if (data2->isValid())
+						{
+							args[GWI_LIFEMISC] = data2->InitD[GWMI_INITLIFEMISC-8];
+							args[GWI_DEATHMISC] = data2->InitD[GWMI_INITDEATHMISC-8];
+							args[GWI_PARTICLEOFFSET] = data2->InitD[GWMI_PARTICLEOFFSET-8];
+						}
+						Remove(data2);
+					}
+				}
+				else this->Misc[GWM_INITSTUFF] = 0;
+				Remove(data);
+			}
 			if (this->Angular == false)
 			{
 				this->Angle = DegtoRad(DirAngle(this->Dir));
@@ -210,6 +256,8 @@ namespace ghost3
 				default:
 					break;
 			}
+			if (lifespan == EWL_GROW && args[GWI_LIFEMISC] == 0) args[GWI_LIFEMISC] = 0.02;
+			if (lifespan == EWL_SHRINK && args[GWI_LIFEMISC] == 0) args[GWI_LIFEMISC] = -0.02;
 			this->Misc[GWM_SETTINGS] = args;
 			while(true)
 			{
@@ -225,6 +273,12 @@ namespace ghost3
 			int startX=this->X;
 			int startY=this->Y;
 			bool selfPropelled=true;
+			if (Abs(args[GWI_HITWIDTH]-this->HitWidth) >= 1) args[GWI_HITWIDTH] = this->HitWidth;
+			if (Abs(args[GWI_HITHEIGHT]-this->HitHeight) >= 1) args[GWI_HITHEIGHT] = this->HitHeight;
+			if (Abs(args[GWI_HITXOFFSET]-this->HitXOffset) >= 1) args[GWI_HITXOFFSET] = this->HitXOffset;
+			if (Abs(args[GWI_HITYOFFSET]-this->HitYOffset) >= 1) args[GWI_HITYOFFSET] = this->HitYOffset;
+			if (Abs(args[GWI_DRAWXOFFSET]-this->DrawXOffset) >= 1) args[GWI_DRAWXOFFSET] = this->DrawXOffset;
+			if (Abs(args[GWI_DRAWYOFFSET]-this->DrawYOffset) >= 1) args[GWI_DRAWYOFFSET] = this->DrawYOffset;
 			// Is the weapon still active?
 			unless(get_bit(args[GWI_FLAGS], EWFI_DEAD))
 			{
@@ -306,22 +360,51 @@ namespace ghost3
 				// Start lifespan updates
 				if(args[GWI_LIFESPAN]!=0)
 				{
-					if(args[GWI_LIFESPAN]==EWL_TIMER)
+					switch(args[GWI_LIFESPAN])
 					{
-						args[GWI_LIFEARG]-=1;
-						if(args[GWI_LIFEARG]<=0)
-							KillEWeapon(this);
-					}
-					else if(args[GWI_LIFESPAN]==EWL_NEAR_LINK)
-					{
-						if(Distance(this->X, this->Y, Link->X, Link->Y)<args[GWI_LIFEARG])
-							KillEWeapon(this);
-					}
-					else if(args[GWI_LIFESPAN]==EWL_SLOW_TO_HALT)
-					{
-						this->Step=Max(0, this->Step-args[GWI_LIFEARG]);
-						if(this->Step<=0)
-							KillEWeapon(this);
+						case EWL_TIMER:
+						{
+							args[GWI_LIFEARG]-=1;
+							if(args[GWI_LIFEARG]<=0)
+								KillEWeapon(this);
+							break;
+						}
+						case EWL_NEAR_LINK:
+						{
+							if(Distance(this->X, this->Y, Link->X, Link->Y)<args[GWI_LIFEARG])
+								KillEWeapon(this);
+							break;
+						}
+						case EWL_SLOW_TO_HALT:
+						{
+							this->Step=Max(0, this->Step-args[GWI_LIFEARG]);
+							if(this->Step<=0)
+								KillEWeapon(this);
+							break;
+						}
+						case EWL_GROW:
+						case EWL_SHRINK:
+						{
+							args[GWI_LIFEARG]-=1;
+							if(args[GWI_LIFEARG]==0)
+								KillEWeapon(this);
+							else
+							{
+								int diff = args[GWI_HITWIDTH];
+								args[GWI_HITWIDTH] *= (1+args[GWI_LIFEMISC]);
+								args[GWI_HITXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+								args[GWI_DRAWXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+								diff = args[GWI_HITHEIGHT];
+								args[GWI_HITHEIGHT] *= (1+args[GWI_LIFEMISC]);
+								args[GWI_HITYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+								args[GWI_DRAWYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+								if (this->Scale == 0) this->Scale = 1;
+								this->Scale *= (1+args[GWI_LIFEMISC]);
+							}
+							break;
+						}
+						default:
+							break;
 					}
 				} // End lifespan updates
 			}
@@ -388,6 +471,13 @@ namespace ghost3
 						break;
 				}
 			} // End death effects
+			
+			this->HitWidth = Round(args[GWI_HITWIDTH]);
+			this->HitHeight = Round(args[GWI_HITHEIGHT]);
+			this->HitXOffset = Round(args[GWI_HITXOFFSET]);
+			this->HitYOffset = Round(args[GWI_HITYOFFSET]);
+			this->DrawXOffset = Round(args[GWI_DRAWXOFFSET]);
+			this->DrawYOffset = Round(args[GWI_DRAWYOFFSET]);
 			
 			// Start flags
 			
@@ -605,12 +695,6 @@ namespace ghost3
 			}
 		}
 		
-		
-		
-		
-		
-		
-		
 		void UpdateEWMRandom(eweapon this, int args)
 		{
 			this->Angle+=Randf(2*args[GWI_MOVEARG1])-args[GWI_MOVEARG1];
@@ -747,62 +831,10 @@ namespace ghost3
 							if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE) 
 							{
 								this->Step *= 1.25;
-								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth *= 1.125;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight *= 1.125;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale *= 1.125;
-								}
-								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth /= 1.125;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight /= 1.125;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale /= 1.125;
-								}
 							}
 							else 
 							{
 								this->Step *= 1.5;
-								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth *= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight *= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale *= 1.25;
-								}
-								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth /= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight /= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale /= 1.25;
-								}
 							}
 						}
 						else if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE)
@@ -811,33 +843,33 @@ namespace ghost3
 							else 
 							{
 								this->Step /= 1.5;
-								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth /= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight /= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale /= 1.25;
-								}
-								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth *= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight *= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale *= 1.25;
-								}
 							}
+						}
+						if (args[GWI_MOVEARG2]&EWMF_SCALEUP)
+						{
+							int diff = args[GWI_HITWIDTH];
+							args[GWI_HITWIDTH] *= 1.25;
+							args[GWI_HITXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							args[GWI_DRAWXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							diff = args[GWI_HITHEIGHT];
+							args[GWI_HITHEIGHT] *= 1.25;
+							args[GWI_HITYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							args[GWI_DRAWYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							if (this->Scale == 0) this->Scale = 1;
+							this->Scale *= 1.25;
+						}
+						if (args[GWI_MOVEARG2]&EWMF_SCALEDOWN)
+						{
+							int diff = args[GWI_HITWIDTH];
+							args[GWI_HITWIDTH] /= 1.25;
+							args[GWI_HITXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							args[GWI_DRAWXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							diff = args[GWI_HITHEIGHT];
+							args[GWI_HITHEIGHT] /= 1.25;
+							args[GWI_HITYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							args[GWI_DRAWYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							if (this->Scale == 0) this->Scale = 1;
+							this->Scale /= 1.25;
 						}
 						if (args[GWI_MOVEARG1] > 0) --args[GWI_MOVEARG1];
 					}
@@ -851,6 +883,7 @@ namespace ghost3
 						args[GWI_MOVEMENT]=0;
 					}
 				}
+				if (args[GWI_MOVEARG2]&EWMF_REAIM) break;
 				int xpush2 = signx*Min(1, Abs(xpush));
 				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, signx, 0), 1, false)) args[GWI_TRUEX]+=xpush2;
 				
@@ -864,62 +897,10 @@ namespace ghost3
 							if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE) 
 							{
 								this->Step *= 1.25;
-								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth *= 1.125;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight *= 1.125;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale *= 1.125;
-								}
-								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth /= 1.125;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight /= 1.125;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale /= 1.125;
-								}
 							}
 							else 
 							{
 								this->Step *= 1.5;
-								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth *= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight *= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale *= 1.25;
-								}
-								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth /= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight /= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale /= 1.25;
-								}
 							}
 						}
 						else if (args[GWI_MOVEARG2]&EWMF_SLOWBOUNCE)
@@ -928,33 +909,33 @@ namespace ghost3
 							else 
 							{
 								this->Step /= 1.5;
-								if (args[GWI_MOVEARG2]&EWMF_SPEEDSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth /= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight /= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale /= 1.25;
-								}
-								if (args[GWI_MOVEARG2]&EWMF_SLOWSCALE)
-								{
-									int diff = this->HitWidth;
-									this->HitWidth *= 1.25;
-									this->HitXOffset -= (this->HitWidth-diff)/2;
-									this->DrawXOffset -= (this->HitWidth-diff)/2;
-									diff = this->HitHeight;
-									this->HitHeight *= 1.25;
-									this->HitYOffset -= (this->HitHeight-diff)/2;
-									this->DrawYOffset -= (this->HitHeight-diff)/2;
-									if (this->Scale == 0) this->Scale = 1;
-									this->Scale *= 1.25;
-								}
 							}
+						}
+						if (args[GWI_MOVEARG2]&EWMF_SCALEUP)
+						{
+							int diff = args[GWI_HITWIDTH];
+							args[GWI_HITWIDTH] *= 1.25;
+							args[GWI_HITXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							args[GWI_DRAWXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							diff = args[GWI_HITHEIGHT];
+							args[GWI_HITHEIGHT] *= 1.25;
+							args[GWI_HITYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							args[GWI_DRAWYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							if (this->Scale == 0) this->Scale = 1;
+							this->Scale *= 1.25;
+						}
+						if (args[GWI_MOVEARG2]&EWMF_SCALEDOWN)
+						{
+							int diff = args[GWI_HITWIDTH];
+							args[GWI_HITWIDTH] /= 1.25;
+							args[GWI_HITXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							args[GWI_DRAWXOFFSET] -= (args[GWI_HITWIDTH]-diff)/2;
+							diff = args[GWI_HITHEIGHT];
+							args[GWI_HITHEIGHT] /= 1.25;
+							args[GWI_HITYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							args[GWI_DRAWYOFFSET] -= (args[GWI_HITHEIGHT]-diff)/2;
+							if (this->Scale == 0) this->Scale = 1;
+							this->Scale /= 1.25;
 						}
 						if (args[GWI_MOVEARG1] > 0) --args[GWI_MOVEARG1];
 					}
@@ -968,13 +949,14 @@ namespace ghost3
 						args[GWI_MOVEMENT]=0;
 					}
 				}
+				if (args[GWI_MOVEARG2]&EWMF_REAIM) break;
 				int ypush2 = signy*Min(1, Abs(ypush));
 				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, 0, signy), 1, false)) args[GWI_TRUEY]+=ypush2;
 				ypush = signy*(Abs(ypush)-Abs(ypush2));
 				xpush = signx*(Abs(xpush)-Abs(xpush2));
 			}
-			Trace(this->Angle);
-			this->Angle = RadianAngle(0, 0, (signx * Abs(xpush3)), (signy * Abs(ypush3)));
+			if (args[GWI_MOVEARG2]&EWMF_REAIM) this->Angle = RadianAngle(args[GWI_TRUEX], args[GWI_TRUEY], Hero->X, Hero->Y);
+			else this->Angle = RadianAngle(0, 0, (signx * Abs(xpush3)), (signy * Abs(ypush3)));
 			this->X=args[GWI_TRUEX];
 			this->Y=args[GWI_TRUEY];
 		}
@@ -1505,14 +1487,38 @@ namespace ghost3
 		void DoEWeaponDeath4FireballsHV(eweapon this, int args)
 		{
 			for(int i=0; i<4; ++i)
-				FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+			{
+				eweapon e = FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+				if (this->Scale != 1 && this->Scale != 0)
+				{
+					e->DrawXOffset = this->HitXOffset;
+					e->DrawYOffset = this->HitYOffset;
+					e->HitXOffset  = this->HitXOffset;
+					e->HitYOffset  = this->HitYOffset;
+					e->HitWidth    = this->HitWidth;
+					e->HitHeight   = this->HitHeight;
+					e->Scale = this->Scale;
+				}
+			}
 			this->DeadState=0;
 		}
 
 		void DoEWeaponDeath4FireballsDiag(eweapon this, int args)
 		{
 			for(int i=4; i<8; ++i)
-				FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+			{
+				eweapon e = FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+				if (this->Scale != 1 && this->Scale != 0)
+				{
+					e->DrawXOffset = this->HitXOffset;
+					e->DrawYOffset = this->HitYOffset;
+					e->HitXOffset  = this->HitXOffset;
+					e->HitYOffset  = this->HitYOffset;
+					e->HitWidth    = this->HitWidth;
+					e->HitHeight   = this->HitHeight;
+					e->Scale = this->Scale;
+				}
+			}
 			this->DeadState=0;
 		}
 
@@ -1521,12 +1527,36 @@ namespace ghost3
 			if(Rand(2)==0)
 			{
 				for(int i=0; i<4; ++i)
-					FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+				{
+					eweapon e = FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+					if (this->Scale != 1 && this->Scale != 0)
+					{
+						e->DrawXOffset = this->HitXOffset;
+						e->DrawYOffset = this->HitYOffset;
+						e->HitXOffset  = this->HitXOffset;
+						e->HitYOffset  = this->HitYOffset;
+						e->HitWidth    = this->HitWidth;
+						e->HitHeight   = this->HitHeight;
+						e->Scale = this->Scale;
+					}
+				}
 			}
 			else
 			{
 				for(int i=4; i<8; ++i)
-					FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+				{
+					eweapon e = FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+					if (this->Scale != 1 && this->Scale != 0)
+					{
+						e->DrawXOffset = this->HitXOffset;
+						e->DrawYOffset = this->HitYOffset;
+						e->HitXOffset  = this->HitXOffset;
+						e->HitYOffset  = this->HitYOffset;
+						e->HitWidth    = this->HitWidth;
+						e->HitHeight   = this->HitHeight;
+						e->Scale = this->Scale;
+					}
+				}
 			}
 			this->DeadState=0;
 		}
@@ -1534,7 +1564,19 @@ namespace ghost3
 		void DoEWeaponDeath8Fireballs(eweapon this, int args)
 		{
 			for(int i=0; i<8; ++i)
-				FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+			{
+				eweapon e = FireNonAngularEWeapon(EW_FIREBALL, CenterX(this)-8, CenterY(this)-8, i, 200, this->Damage/2, args[GWI_DEATHARG], 0, 0);
+				if (this->Scale != 1 && this->Scale != 0)
+				{
+					e->DrawXOffset = this->HitXOffset;
+					e->DrawYOffset = this->HitYOffset;
+					e->HitXOffset  = this->HitXOffset;
+					e->HitYOffset  = this->HitYOffset;
+					e->HitWidth    = this->HitWidth;
+					e->HitHeight   = this->HitHeight;
+					e->Scale = this->Scale;
+				}
+			}
 			this->DeadState=0;
 		}
 
@@ -1677,6 +1719,9 @@ namespace ghost3
 						centerX=this->X+8;
 						centerY=this->Y+8;
 					}
+					
+					centerX += Rand(args[GWI_PARTICLEOFFSET], -args[GWI_PARTICLEOFFSET]);
+					centerY += Rand(args[GWI_PARTICLEOFFSET], -args[GWI_PARTICLEOFFSET]);
 
 					CopyEWeapon(prototype, centerX, centerY, this->Angle, this->Z);
 					Game->PlaySound(prototype->Misc[GWD_SFX]);
@@ -1967,12 +2012,16 @@ namespace ghost3
 		{
 			wpn->InitD[3]=type;
 			wpn->InitD[4]=arg;
+			if (type == EWL_GROW) SetExInit(wpn, GWMI_INITLIFEMISC, 0.02);
+			if (type == EWL_SHRINK) SetExInit(wpn, GWMI_INITLIFEMISC, -0.02);
 		}
 		else
 		{
 			int args = wpn->Misc[GWM_SETTINGS];
 			args[GWI_LIFESPAN]=type;
 			args[GWI_LIFEARG]=arg;
+			if (type == EWL_GROW) args[GWI_LIFEMISC] = 0.02;
+			if (type == EWL_SHRINK) args[GWI_LIFEMISC] = -0.02;
 		}
 	}
 
@@ -2008,9 +2057,9 @@ namespace ghost3
 		unless (wpn->Script == Game->GetEWeaponScript("DummyWeapon") || wpn->Script == Game->GetEWeaponScript("GhostWeapon")) wpn->Script = Game->GetEWeaponScript("GhostWeapon");
 		unless(wpn->Misc[GWM_SETTINGS])
 		{
-			wpn->Misc[GWM_PROTOTYPEUID] = prototype->UID;
-			wpn->Misc[GWM_PROTOTYPESHOTS] = numShots;
-			wpn->Misc[GWM_PROTOTYPEMISC]=spreadType*100+(WrapAngle(angle)+6.2832);
+			SetExInit(wpn, GWMI_PROTOTYPEUID, prototype->UID);
+			SetExInit(wpn, GWMI_PROTOTYPESHOTS, numShots);
+			SetExInit(wpn, GWMI_PROTOTYPEMISC, spreadType*100+(WrapAngle(angle)+6.2832));
 		}
 		else
 		{
@@ -2464,7 +2513,7 @@ namespace ghost3
 			}
 			else
 			{
-				int uid = e->Misc[GWM_PARTICLEUID];
+				int uid = GetExInit(e, GWMI_PARTICLEUID);
 				eweapon particle = Screen->LoadEWeaponByUID(uid);
 				particle->Misc[GWD_FREQ] = frequency;
 			}
@@ -2481,7 +2530,482 @@ namespace ghost3
 			}
 			else
 			{
-				e->Misc[GWM_PARTICLEUID] = dummy->UID;
+				SetExInit(e, GWMI_PARTICLEUID, dummy->UID);
+			}
+		}
+	}
+	lweapon CreateDataWeapon(untyped arr)
+	{
+		lweapon wpn = Screen->CreateLWeapon(LW_SPARKLE);
+		wpn->Step=0;
+		wpn->Damage = 0;
+		
+		wpn->CollDetection=false;
+		wpn->DrawXOffset=32768;
+		wpn->HitXOffset=32768;
+		wpn->NumFrames = 2;
+		wpn->ASpeed = 1;
+		
+		// Move it to make sure it's not deleted
+		wpn->X=32;
+		wpn->Y=32;
+		
+		int sz = Min(SizeOfArray(arr), 8);
+		for(int q = sz-1; q >= 0; --q)
+		{
+			wpn->InitD[q] = arr[q];
+		}
+		
+		return wpn;
+	}
+	void SetExInit(eweapon e, GW_EXINIT index, untyped value)
+	{
+		if (e->Misc[GWM_INITSTUFF])
+		{
+			lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+			if (data->isValid())
+			{
+				if (index < 8) data->InitD[index] = value;
+			}
+			else
+			{
+				int arr[8];
+				if (index < 8) arr[index] = value;
+				data = CreateDataWeapon(arr);
+				e->Misc[GWM_INITSTUFF] = data->UID;
+			}
+		}
+		else
+		{
+			int arr[8];
+			if (index < 8) arr[index] = value;
+			lweapon data = CreateDataWeapon(arr);
+			e->Misc[GWM_INITSTUFF] = data->UID;
+		}
+		if (index >= 8)
+		{
+			lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+			if (data->isValid()) //If it isn't valid, then attempts to create it last time failed, so don't even bother trying again.
+			{
+				if (data->Misc[GWM_INITSTUFF])
+				{
+					lweapon data2 = Screen->LoadLWeaponByUID(data->Misc[GWM_INITSTUFF]);
+					if (data2->isValid())
+					{
+						if (index < 8) data2->InitD[index-8] = value;
+					}
+					else
+					{
+						int arr[8];
+						if (index < 16) arr[index-8] = value;
+						data2 = CreateDataWeapon(arr);
+						data->Misc[GWM_INITSTUFF] = data2->UID;
+					}
+				}
+				else
+				{
+					int arr[8];
+					if (index < 16) arr[index-8] = value;
+					lweapon data2 = CreateDataWeapon(arr);
+					data->Misc[GWM_INITSTUFF] = data2->UID;
+				}
+			}
+		}
+	}
+	void SetExInits(eweapon e, untyped arr)
+	{
+		bool full = false;
+		if (SizeOfArray(arr) > 8) full = true;
+		if (e->Misc[GWM_INITSTUFF])
+		{
+			lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+			if (data->isValid())
+			{
+				int sz = Min(SizeOfArray(arr), 8);
+				for(int q = sz-1; q >= 0; --q)
+				{
+					data->InitD[q] = arr[q];
+				}
+			}
+			else
+			{
+				data = CreateDataWeapon(arr);
+				e->Misc[GWM_INITSTUFF] = data->UID;
+			}
+		}
+		else
+		{
+			lweapon data = CreateDataWeapon(arr);
+			e->Misc[GWM_INITSTUFF] = data->UID;
+		}
+		if (full)
+		{
+			untyped arr2[8];
+			int sz = Min(SizeOfArray(arr), 16);
+			for(int q = sz-1; q >= 8; --q)
+			{
+				arr2[q-8] = arr[q];
+			}
+			lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+			if (data->isValid()) //If it isn't valid, then attempts to create it last time failed, so don't even bother trying again.
+			{
+				if (data->Misc[GWM_INITSTUFF])
+				{
+					lweapon data2 = Screen->LoadLWeaponByUID(data->Misc[GWM_INITSTUFF]);
+					if (data2->isValid())
+					{
+						int sz2 = Min(SizeOfArray(arr2), 8);
+						for(int q = sz2-1; q >= 0; --q)
+						{
+							data2->InitD[q] = arr2[q];
+						}
+					}
+					else
+					{
+						data2 = CreateDataWeapon(arr2);
+						data->Misc[GWM_INITSTUFF] = data2->UID;
+					}
+				}
+				else
+				{
+					lweapon data2 = CreateDataWeapon(arr2);
+					data->Misc[GWM_INITSTUFF] = data2->UID;
+				}
+			}
+		}
+	}
+	void SetExInits2(eweapon e, untyped arr)
+	{
+		unless (e->Misc[GWM_INITSTUFF])
+		{
+			int arr2[8];
+			lweapon data = CreateDataWeapon(arr2);
+			e->Misc[GWM_INITSTUFF] = data->UID;
+		}
+		lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+		unless (data->isValid())
+		{
+			int arr2[8];
+			data = CreateDataWeapon(arr2);
+			e->Misc[GWM_INITSTUFF] = data->UID;
+		}
+		if (data->isValid()) //If it isn't valid, then attempts to create it last time failed, so don't even bother trying again.
+		{
+			if (data->Misc[GWM_INITSTUFF])
+			{
+				lweapon data2 = Screen->LoadLWeaponByUID(data->Misc[GWM_INITSTUFF]);
+				if (data2->isValid())
+				{
+					int sz2 = Min(SizeOfArray(arr), 8);
+					for(int q = sz2-1; q >= 0; --q)
+					{
+						data2->InitD[q] = arr[q];
+					}
+				}
+				else
+				{
+					data2 = CreateDataWeapon(arr);
+					data->Misc[GWM_INITSTUFF] = data2->UID;
+				}
+			}
+			else
+			{
+				lweapon data2 = CreateDataWeapon(arr);
+				data->Misc[GWM_INITSTUFF] = data2->UID;
+			}
+		}
+	}
+	untyped GetExInit(eweapon e, GW_EXINIT index)
+	{
+		if (e->Misc[GWM_INITSTUFF])
+		{
+			lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+			if (data->isValid())
+			{
+				if (index < 8) return data->InitD[index];
+			}
+			else return 0;
+		}
+		else return 0;
+		if (index >= 8)
+		{
+			lweapon data = Screen->LoadLWeaponByUID(e->Misc[GWM_INITSTUFF]);
+			if (data->isValid()) //If it isn't valid, then attempts to create it last time failed, so don't even bother trying again.
+			{
+				if (data->Misc[GWM_INITSTUFF])
+				{
+					lweapon data2 = Screen->LoadLWeaponByUID(data->Misc[GWM_INITSTUFF]);
+					if (data2->isValid())
+					{
+						if (index < 16) return data2->InitD[index-8];
+					}
+					else return 0;
+				}
+				else return 0;
+			}
+			else return 0;
+		}
+		return 0;
+	}
+	untyped GetEWeaponAttribute(eweapon e, GW_INTERNAL index)
+	{
+		if (IsInitialized(e))
+		{
+			int args = e->Misc[GWM_SETTINGS];
+			return args[index];
+		}
+		else
+		{
+			switch (index)
+			{
+				case GWI_TRUEX:
+					return e->X;
+					break;
+					
+				case GWI_TRUEY:
+					return e->Y;
+					break;
+					
+				case GWI_MOVEMENT:
+					return e->InitD[0];
+					break;
+					
+				case GWI_MOVEARG1:
+					return e->InitD[1];
+					break;
+					
+				case GWI_MOVEARG2:
+					return e->InitD[2];
+					break;
+					
+				case GWI_LIFESPAN:
+					return e->InitD[3];
+					break;
+					
+				case GWI_LIFEARG:
+					return e->InitD[4];
+					break;
+					
+				case GWI_DEATHTYPE:
+					return e->InitD[5];
+					break;
+					
+				case GWI_DEATHARG:
+					return e->InitD[6];
+					break;
+					
+				case GWI_FLAGS:
+					return e->InitD[7];
+					break;
+					
+				case GWI_MISC1:
+					return GetExInit(e, GWMI_INITMISC1);
+					break;
+					
+				case GWI_MISC2:
+					return GetExInit(e, GWMI_INITMISC2);
+					break;
+					
+				case GWI_MISC3:
+					return GetExInit(e, GWMI_INITMISC3);
+					break;
+					
+				case GWI_DUMMYWPN:
+					return GetExInit(e, GWMI_PROTOTYPEUID);
+					break;
+					
+				case GWI_DUMMYANGLE:
+					return ((GetExInit(e, GWMI_PROTOTYPEMISC)%10)-6.2832);
+					break;
+					
+				case GWI_DUMMYSHOTS:
+					return GetExInit(e, GWMI_PROTOTYPESHOTS);
+					break;
+					
+				case GWI_DUMMYTYPE:
+					int angle = ((GetExInit(e, GWMI_PROTOTYPEMISC)%10)-6.2832);
+					return (((GetExInit(e, GWMI_PROTOTYPEMISC)-angle)/100)>>0);
+					break;
+					
+				case GWI_PARTICLEWPN:
+					return GetExInit(e, GWMI_PARTICLEUID);
+					break;
+					
+				case GWI_PARTICLETIMER:
+					return GetExInit(e, GWMI_PARTICLETIMER);
+					break;
+					
+				case GWI_LIFEMISC:
+					return GetExInit(e, GWMI_INITLIFEMISC);
+					break;
+					
+				case GWI_DEATHMISC:
+					return GetExInit(e, GWMI_INITDEATHMISC);
+					break;
+					
+				case GWI_DRAWXOFFSET:
+					return e->DrawXOffset;
+					break;
+					
+				case GWI_DRAWYOFFSET:
+					return e->DrawYOffset;
+					break;
+					
+				case GWI_HITXOFFSET:
+					return e->HitXOffset;
+					break;
+					
+				case GWI_HITYOFFSET:
+					return e->HitYOffset;
+					break;
+					
+				case GWI_HITWIDTH:
+					return e->HitWidth;
+					break;
+					
+				case GWI_HITHEIGHT:
+					return e->HitHeight;
+					break;
+					
+				case GWI_PARTICLEOFFSET:
+					GetExInit(e, GWMI_PARTICLEOFFSET);
+					break;
+					
+				default:
+					return 0;
+			}
+		}
+	}
+	void SetEWeaponAttribute(eweapon e, GW_INTERNAL index, untyped value)
+	{
+		if (IsInitialized(e))
+		{
+			int args = e->Misc[GWM_SETTINGS];
+			args[index] = value;
+		}
+		else
+		{
+			switch (index)
+			{
+				case GWI_TRUEX:
+					e->X = value;
+					break;
+					
+				case GWI_TRUEY:
+					e->Y = value;
+					break;
+					
+				case GWI_MOVEMENT:
+					e->InitD[0] = value;
+					break;
+					
+				case GWI_MOVEARG1:
+					e->InitD[1] = value;
+					break;
+					
+				case GWI_MOVEARG2:
+					e->InitD[2] = value;
+					break;
+					
+				case GWI_LIFESPAN:
+					e->InitD[3] = value;
+					break;
+					
+				case GWI_LIFEARG:
+					e->InitD[4] = value;
+					break;
+					
+				case GWI_DEATHTYPE:
+					e->InitD[5] = value;
+					break;
+					
+				case GWI_DEATHARG:
+					e->InitD[6] = value;
+					break;
+					
+				case GWI_FLAGS:
+					e->InitD[7] = value;
+					break;
+					
+				case GWI_MISC1:
+					SetExInit(e, GWMI_INITMISC1, value);
+					break;
+					
+				case GWI_MISC2:
+					SetExInit(e, GWMI_INITMISC2, value);
+					break;
+					
+				case GWI_MISC3:
+					SetExInit(e, GWMI_INITMISC3, value);
+					break;
+					
+				case GWI_DUMMYWPN:
+					SetExInit(e, GWMI_PROTOTYPEUID, value);
+					break;
+					
+				case GWI_DUMMYANGLE:
+					int angle = ((GetExInit(e, GWMI_PROTOTYPEMISC)%10)-6.2832);
+					int type =  (((GetExInit(e, GWMI_PROTOTYPEMISC)-angle)/100)>>0);
+					int misc = type*100+(WrapAngle(value)+6.2832);
+					SetExInit(e, GWMI_PROTOTYPEMISC, misc);
+					break;
+					
+				case GWI_DUMMYSHOTS:
+					SetExInit(e, GWMI_PROTOTYPESHOTS, value);
+					break;
+					
+				case GWI_DUMMYTYPE:
+					int angle = ((GetExInit(e, GWMI_PROTOTYPEMISC)%10)-6.2832);
+					int misc = value*100+(WrapAngle(angle)+6.2832);
+					SetExInit(e, GWMI_PROTOTYPEMISC, misc);
+					break;
+					
+				case GWI_PARTICLEWPN:
+					SetExInit(e, GWMI_PARTICLEUID, value);
+					break;
+					
+				case GWI_PARTICLETIMER:
+					SetExInit(e, GWMI_PARTICLETIMER, value);
+					break;
+					
+				case GWI_LIFEMISC:
+					SetExInit(e, GWMI_INITLIFEMISC, value);
+					break;
+					
+				case GWI_DEATHMISC:
+					SetExInit(e, GWMI_INITDEATHMISC, value);
+					break;
+					
+				case GWI_DRAWXOFFSET:
+					e->DrawXOffset = value;
+					break;
+					
+				case GWI_DRAWYOFFSET:
+					e->DrawYOffset = value;
+					break;
+					
+				case GWI_HITXOFFSET:
+					e->HitXOffset = value;
+					break;
+					
+				case GWI_HITYOFFSET:
+					e->HitYOffset = value;
+					break;
+					
+				case GWI_HITWIDTH:
+					e->HitWidth = value;
+					break;
+					
+				case GWI_HITHEIGHT:
+					e->HitHeight = value;
+					break;
+					
+				case GWI_PARTICLEOFFSET:
+					SetExInit(e, GWMI_PARTICLEOFFSET, value);
+					break;
+					
+				default:
+					break;
 			}
 		}
 	}
