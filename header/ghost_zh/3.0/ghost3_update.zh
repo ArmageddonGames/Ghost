@@ -11,16 +11,6 @@ namespace ghost3
 	const int GH_DATA = 30;
 	const int GH_INTERNAL = 31;
 
-	enum
-	{
-		GHI_FLAGS,
-		GHI_FLAGS2,
-		GHI_IFLAGS,
-		GHI_PREVX,
-		GHI_PREVY,
-		GHI_DIR
-	};
-
 	int GetInternal(npc ghost, int index)
 	{
 		int flags = ghost->Misc[GH_INTERNAL];

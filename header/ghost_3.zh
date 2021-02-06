@@ -14,6 +14,22 @@
 namespace ghost3
 {
 
+	// Registers of the data[] array, used for every script
+	enum DataRegisters
+	{
+		GHI_FLAGS,`	//GHF_, first 16
+		GHI_FLAGS2,	//GHF_ second 16
+		GHI_IFLAGS,	//GHFI_ internal enemy flags
+		GHI_PREVX,	//Positional updates
+		GHI_PREVY,
+		GHI_DIR,
+		D0, D1, D2, D3,	//Generic data registers
+		D4, D5, D6, D7,
+		CLK0, CLK1,	// Clocks
+		CLK2, CLK3,
+		DATA_SIZE
+	};
+
 	// Advanced settings -----------------------------------------------------------
 	
 	
@@ -46,13 +62,6 @@ namespace ghost3
 	    return false;
 	}
 	
-	enum DataRegisters
-	{
-		D0, D1, D2, D3, D4, D5, D6, D7, 
-		CLK0, CLK1, CLK2, CLK3,
-		DATA_SIZE
-	};
-
 	//Used to determine if a weapon hit a platform in sideview.
 	bool OnSidePlatform(int x, int y, int xOff, int yOff, int h, int w) 
 	{
