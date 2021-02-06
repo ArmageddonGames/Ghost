@@ -17,7 +17,7 @@ npc script G3_Example1
 {
 	void run()
 	{
-		int data[8]; //Always first
+		int data[DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 32, 0, ghost3::EWF_NO_COLLISION);
@@ -76,7 +76,7 @@ npc script G3_Example2
 {
 	void run()
 	{
-		int data[8]; //Always first
+		int data[DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 97, 0, ghost3::EWF_NO_COLLISION);
@@ -106,7 +106,7 @@ npc script G3_Example3
 {
 	void run()
 	{
-		int data[8]; //Always first
+		int data[DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, this->WeaponDamage, 87, 0, 0);
@@ -134,7 +134,7 @@ npc script G3_Example4
 {
 	void run()
 	{
-		int data[8]; //Always first
+		int data[DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		int shotcounter;
@@ -157,7 +157,7 @@ npc script G3_Example5
 {
 	void run()
 	{
-		int data[8]; //Always first
+		int data[DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		int shotcounter;

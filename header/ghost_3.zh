@@ -45,6 +45,13 @@ namespace ghost3
 	    }
 	    return false;
 	}
+	
+	enum DataRegisters
+	{
+		D0, D1, D2, D3, D4, D5, D6, D7, 
+		CLK0, CLK1, CLK2, CLK3,
+		DATA_SIZE
+	};
 
 	//Used to determine if a weapon hit a platform in sideview.
 	bool OnSidePlatform(int x, int y, int xOff, int yOff, int h, int w) 
