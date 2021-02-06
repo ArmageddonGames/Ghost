@@ -565,7 +565,7 @@ namespace ghost3
 					SetEWeaponRotation(this);
 			}
 			
-			if(get_bit(args[GWI_FLAGS], EWF_FAKE_Z)!=0 || GH_FAKE_EWEAPON_Z!=0)
+			if(get_bit(args[GWI_FLAGS], EWF_FAKE_Z)!=0 || Game->Ghost[GHV_FAKE_EWEAPON_Z])
 			{
 				// For some reason, DrawZOffset is also HitZOffset,
 				// so Y offsets also have to be used.
@@ -818,7 +818,7 @@ namespace ghost3
 			{
 				if (Sign(xpush)) signx = Sign(xpush);
 				if (Sign(ypush)) signy = Sign(ypush);
-				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, signx, 0), 1, false)) 
+				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], ghost3::AngleDir4(0, 0, signx, 0), 1, false)) 
 				{
 					unless (args[GWI_MOVEARG1] == 0) 
 					{
@@ -882,11 +882,11 @@ namespace ghost3
 				}
 				if (args[GWI_MOVEARG2]&EWMF_REAIM) break;
 				int xpush2 = signx*Min(1, Abs(xpush));
-				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, signx, 0), 1, false)) args[GWI_TRUEX]+=xpush2;
+				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], ghost3::AngleDir4(0, 0, signx, 0), 1, false)) args[GWI_TRUEX]+=xpush2;
 				
-				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, 0, signy), 1, false)) 
+				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], ghost3::AngleDir4(0, 0, 0, signy), 1, false)) 
 				{
-					unless (args[GWI_MOVEARG1] == 0) 
+					if (args[GWI_MOVEARG1]) //can this ever be < 0 and be safe?
 					{
 						signy *= -1;
 						if (args[GWI_MOVEARG2]&EWMF_SPEEDBOUNCE) 
@@ -938,7 +938,7 @@ namespace ghost3
 					}
 					else
 					{
-						if(args[GWI_MOVEARG2]&EWMF_DIE) KillEWeapon(this);
+						if(args[GWI_MOVEARG2]&EWMF_DIE) ghost3::KillEWeapon(this);
 						unless(args[GWI_MOVEARG2]&EWMF_KEEPMOVING)
 						{
 							this->Step=0;
@@ -948,7 +948,7 @@ namespace ghost3
 				}
 				if (args[GWI_MOVEARG2]&EWMF_REAIM) break;
 				int ypush2 = signy*Min(1, Abs(ypush));
-				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], AngleDir4(0, 0, 0, signy), 1, false)) args[GWI_TRUEY]+=ypush2;
+				if (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], ghost3::AngleDir4(0, 0, 0, signy), 1, false)) args[GWI_TRUEY]+=ypush2;
 				ypush = signy*(Abs(ypush)-Abs(ypush2));
 				xpush = signx*(Abs(xpush)-Abs(xpush2));
 			}
@@ -1658,7 +1658,7 @@ namespace ghost3
 			f->X=CenterX(this)-8;
 			f->Y=CenterY(this)-8;
 			f->Flags[FFCF_ETHEREAL] = (Game->Ghost[GHV_LEG_ETHEREAL]) ? true : false;
-			if (Game->Ghost[GHV_CLEAR_FFC_LINK_DEP]) F->Link = 0;
+			if (Game->Ghost[GHV_CLEAR_FFC_LINK_DEP]) f->Link = 0;
 			f->Script=args[GWI_DEATHARG];
 			f->InitD[0]=this->UID;
 		}
@@ -2283,7 +2283,7 @@ namespace ghost3
 				return SP_FIRE2_ENEMY;
 			case EW_FIRETRAIL:
 				return SP_FIRETRAIL;
-			case EW_MAGIC)
+			case EW_MAGIC:
 				return SP_MAGIC_ENEMY;
 			case EW_BEAM:
 				return SP_SWORD_ENEMY;
@@ -2341,7 +2341,7 @@ namespace ghost3
 			case EW_MAGIC:
 			case EW_WIND:
 				return SFX_WAND;
-		`	case EW_FIRE:
+			case EW_FIRE:
 			case EW_FIRE2:
 			case EW_FIRETRAIL:
 				return SFX_FIRE;

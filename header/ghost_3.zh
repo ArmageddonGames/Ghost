@@ -119,6 +119,7 @@ namespace ghost3
 		GHV_MAX_FFC, //byte
 		GHV_SPAWN_SPRITE, //byte
 		GHV_FAKE_Z, //flag
+		GHV_FAKE_EWEAPON_Z, //flag
 		GHV_ENEMIES_FLICKER, //flag
 		GHV_PREFER_GHOST_ZH_SHADOWS, //flag
 		GHV_FIX_255_ANONE, //flag
@@ -139,7 +140,7 @@ namespace ghost3
 		GHV_LEG_ETHEREAL, //flag
 		GHV_CLEAR_FFC_LINK_DEP, //flag
 		GHV_FIX_EWM_FALL_DEP, //flag
-		GH_FIX_EWM_THROW_DEP, //flag
+		GHV_FIX_EWM_THROW_DEP, //flag
 		
 		GHV_LAST
 		
@@ -208,7 +209,7 @@ namespace ghost3
 		Flag 7: FFC->Link is cleared when an ffc is used (if NOT Enabled), Link to other ffcs is NOT cleared (if ENABLED)
 		Flag 8: Corrected EWM_FALL (if NOT ENABLED), broken EWM_FALL (if ENABLED).
 		Flag 9: Corrected EWM_THROW (if NOT ENABLED), broken EWM_THROW (if ENABLED).
-		Flag 10
+		Flag 10: Fake Weapon Z (if ENABLED), no fake weapon Z (if NOT ENABLED)
 		Flag 11
 		Flag 12
 		Flag 13
@@ -252,10 +253,11 @@ namespace ghost3
 		Game->Ghost[GHV_WEAPONS_HIT_PLATFORMS] = (cd->UserFlags&0x10) ? 1 : 0;
 		
 		//Fixes
-		Game->Ghost[GHV_LEG_ETHEREAL] = (bfix->UserFlags&0x20) ? 0 : 1; //default on
-		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (bfix->UserFlags&0x40) ? 0 : 1; //default on
-		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (bfix->UserFlags&0x80) ? 0 : 1; //default on
-		Game->Ghost[GH_FIX_EWM_THROW_DEP] = (bfix->UserFlags&0x100) ? 0 : 1; //default on
+		Game->Ghost[GHV_LEG_ETHEREAL] = (cd->UserFlags&0x20) ? 0 : 1; //default on
+		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (cd->UserFlags&0x40) ? 0 : 1; //default on
+		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (cd->UserFlags&0x80) ? 0 : 1; //default on
+		Game->Ghost[GHV_FIX_EWM_THROW_DEP] = (cd->UserFlags&0x100) ? 0 : 1; //default on
+		Game->Ghost[GHV_FAKE_EWEAPON_Z] = (cd->UserFlags&0x200) ? 0 : 1; //default off
 		
 		return INIT_SUCCESS;
 	}

@@ -153,7 +153,7 @@ namespace ghost3
 				break;
 			case DIR_DOWN:
 				yStep=step;
-				break:
+				break;
 			case DIR_LEFT:
 				xStep=-step;
 				break;
@@ -563,6 +563,16 @@ namespace ghost3
 			}
 		}
 		return false;
+	}
+	
+	int AngleDir4(int x1, int y1, int x2, int y2) //Overload to do the Angle function
+	{
+		return ::AngleDir4(Angle(x1, y1, x2, y2));
+	}
+	
+	int AngleDir8(int x1, int y1, int x2, int y2) //Overload to do the Angle function
+	{
+		return ::AngleDir8(Angle(x1, y1, x2, y2));
 	}
 }
 

@@ -50,7 +50,7 @@ npc script G3_Example1
 				if ((shotcounter % 30))
 				{
 					int angle = Angle(this->X, this->Y, Hero->X, Hero->Y);
-					this->Dir = ghost3::AngleDir4(angle);
+					this->Dir = AngleDir4(angle);
 					angle = DegtoRad(angle);
 					for(int i = 0; i < 5; ++i)
 					{
@@ -147,7 +147,7 @@ npc script G3_Example4
 				eweapon e = ghost3::FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, DegtoRad(180)+Rand(-0.4, 0.4), 200, this->WeaponDamage, 13, -1, 0);
 				ghost3::SetEWeaponMovement(e, ghost3::EWM_VEER, ghost3::AngleDir8(this->X, this->Y, Hero->X, Hero->Y), 0.07);
 			}
-			ghost3::Ghost_Waitframe(this, GHD_NONE, true);
+			ghost3::Ghost_Waitframe(this, ghost3::GHD_NONE, true);
 		}
 	}
 }
@@ -175,7 +175,7 @@ npc script G3_Example5
 				ghost3::SetEWeaponMovement(e, ghost3::EWM_WALLBOUNCE, this->Attributes[7], flags);
 				ghost3::SetEWeaponDeathEffect(e, ghost3::EWD_SBOMB_EXPLODE, this->WeaponDamage*2);
 			}
-			ghost3::Ghost_Waitframe(this, GHD_NONE, true);
+			ghost3::Ghost_Waitframe(this, ghost3::GHD_NONE, true);
 		}
 	}
 }
@@ -253,13 +253,5 @@ namespace ghost3
 		}
 	}
 
-	int AngleDir4(int x1, int y1, int x2, int y2) //Overload to do the Angle function
-	{
-		return AngleDir4(Angle(x1, y1, x2, y2));
-	}
-	int AngleDir8(int x1, int y1, int x2, int y2) //Overload to do the Angle function
-	{
-		return AngleDir8(Angle(x1, y1, x2, y2));
-	}
 	//FireEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, int flags);
 }

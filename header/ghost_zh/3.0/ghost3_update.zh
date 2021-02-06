@@ -274,7 +274,7 @@ namespace ghost3
 	}
 
 
-	bool Ghost_Waitframe(npc ghost, Ghost_DeathAnim deathAnimation, bool quitOnDeath)
+	bool Ghost_Waitframe(npc ghost, DeathAnim deathAnimation, bool quitOnDeath)
 	{
 		unless(ghost3::Ghost_Waitframe(ghost, false, false))
 		{
