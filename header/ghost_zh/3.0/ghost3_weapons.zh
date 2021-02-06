@@ -544,11 +544,20 @@ namespace ghost3
 				
 				// Currently, these are always drawn on layer 4.
 				// That should probably be changed...
-				int scalexoffset = (this->TileWidth - (this->TileWidth*this->Scale))/2;
-				int scaleyoffset = (this->TileHeight - (this->TileHeight*this->Scale))/2;
-				Screen->DrawTile(4, endX+scalexoffset, endY-this->Z+scaleyoffset, this->Tile,
-				  this->TileWidth, this->TileHeight, this->CSet, this->TileWidth*this->Scale, this->TileHeight*this->Scale,
-				  endX, endY-this->Z, angle, flip, true, OP_OPAQUE);
+				if (this->Scale != 0)
+				{
+					int scalexoffset = (this->TileWidth - (this->TileWidth*this->Scale))/2;
+					int scaleyoffset = (this->TileHeight - (this->TileHeight*this->Scale))/2;
+					Screen->DrawTile(4, endX+scalexoffset, endY-this->Z+scaleyoffset, this->Tile,
+					  this->TileWidth, this->TileHeight, this->CSet, this->TileWidth*this->Scale, this->TileHeight*this->Scale,
+					  endX, endY-this->Z, angle, flip, true, OP_OPAQUE);
+				}
+				else
+				{
+					Screen->DrawTile(4, endX, endY-this->Z, this->Tile,
+						  this->TileWidth, this->TileHeight, this->CSet, -1, -1,
+						  endX, endY-this->Z, angle, flip, true, OP_OPAQUE);
+				}
 			}
 			else // EWF_ROTATE_360 isn't set
 			{
