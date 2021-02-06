@@ -329,6 +329,7 @@ namespace ghost3
 #include "ghost_zh/3.0/ghost3_movement.zh"
 #include "ghost_zh/3.0/ghost3_other.zh"
 #include "ghost_zh/3.0/ghost3_update.zh"
+#include "ghost_zh/3.0/ghost3_shell.zh"
 //#include "ghost_zh/3.0/ghost3_global.zh"
 
 
