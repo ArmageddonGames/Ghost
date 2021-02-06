@@ -208,7 +208,7 @@ namespace ghost3
 		// More than 8 pixels? Step 8 at a time
 		while(step>8)
 		{
-			if(!CanMoveSingle(ghost, dir, step-8, imprecision, inAir))
+			unless(CanMoveSingle(ghost, dir, step-8, imprecision, inAir))
 				return false;
 			step-=8;
 		}
