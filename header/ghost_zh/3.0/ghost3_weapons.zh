@@ -895,7 +895,7 @@ namespace ghost3
 				
 				unless (CanWalk(args[GWI_TRUEX], args[GWI_TRUEY], ghost3::AngleDir4(0, 0, 0, signy), 1, false)) 
 				{
-					if (args[GWI_MOVEARG1]) //can this ever be < 0 and be safe?
+					unless (args[GWI_MOVEARG1] == 0) //Zoria: "can this ever be < 0 and be safe?" Dimi: "Yes, don't bloody touch it. < 0 means it bounces until it dies some other way."
 					{
 						signy *= -1;
 						if (args[GWI_MOVEARG2]&EWMF_SPEEDBOUNCE) 
