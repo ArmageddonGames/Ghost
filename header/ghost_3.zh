@@ -13,7 +13,41 @@
 
 namespace ghost3
 {
-
+	/*
+		Ghost Setup Combo Properties
+		ID: Must be 1 or higher; the lower, the better.
+		Tile: Should be blank.
+		ATTRIBYTES
+		[0] Min ffc used by ghost, must be 1-32
+		[1] Max ffc used by ghost, must be 1-32 and greater or equal to [0].
+		[2] Spawn sprite, 0 to 255
+		[3] Default enemy walking imprecision. (usually set to '2')
+	
+		ATTRIBUTES
+		[0] The sprite->Misc[] index to use for storing data[] array pointers (0 to 31)
+		[1] (Unused)
+		[2] (Unused)
+		[3] (Unused)
+	
+		FLAGS
+		Flag 1: Fake Z (if ENABLED), Engine Z (if NOT ENABLED)
+		Flag 2: Enemies flicker (if ENABLED), Engine hit effect (if NOT ENABLED)
+		Flag 3: Scripted shadows (if ENABLED), Engine shadows (if NOT ENABLED)
+		Flag 4: Fixed ANONE handling (if NOT ENABLED), broken ANONE (if ENABLED)
+		Flag 5: Fixed sideview platform weapon handling/solidity/collision (if NOT ENABLED), broken ghost sideview weapons (if ENABLED)
+		Flag 6: FFCs made by GHost are Ethereal (if NOT ENABLED), or are NOT ETHEREAL (if ENABLED)
+		Flag 7: FFC->Link is cleared when an ffc is used (if NOT Enabled), Link to other ffcs is NOT cleared (if ENABLED)
+		Flag 8: Corrected EWM_FALL (if NOT ENABLED), broken EWM_FALL (if ENABLED).
+		Flag 9: Corrected EWM_THROW (if NOT ENABLED), broken EWM_THROW (if ENABLED).
+		Flag 10: Fake Weapon Z (if ENABLED), no fake weapon Z (if NOT ENABLED)
+		Flag 11
+		Flag 12
+		Flag 13
+		Flag 14
+		Flag 15
+		Flag 16
+	*/
+	
 	// Registers of the data[] array, used for every script
 	enum DataRegisters
 	{
@@ -31,71 +65,10 @@ namespace ghost3
 	};
 
 	// Advanced settings -----------------------------------------------------------
-	
-	
-//! BEGIN: These BUGFIX settings should be removed and be the default behaviour in 3.0.
-	
-	// Set to 1 to make ghost ffcs Ethereal so that they cannot block
-	// other combo types/flags on the screen.
-	// Added in 2.8.12. The prior versions did not have this.
-	// Set to 0 if this causes bugs in legacy quests or scripts.
-	const int GH_ETHEREAL = 1;
-
-//! END
 
 	// npc->Misc[] index
-	// Set this so it doesn't conflict with other scripts. Legal values are 0-15.
-	const int GHI_NPC_DATA = 15;
-
-	// Returns true if enemies are visible on screens with the
-	// "All Enemies Are Invisible" flag enabled
-	bool HaveAmulet()
-	{
-	    if ( Link->Item[I_AMULET1] )
-	    {
-		return true;
-	    }
-	    if ( Link->Item[I_AMULET2] )
-	    {
-		return true;
-	    }
-	    return false;
-	}
-	
-	//Used to determine if a weapon hit a platform in sideview.
-	bool OnSidePlatform(int x, int y, int xOff, int yOff, int h, int w) 
-	{
-		unless (IsSideview()) return false;
-		for(int i = 0; i <= (w-1); ++i)
-		{
-			if( Screen->isSolid( (x + xOff + i), (y + yOff) + h ) )
-			{
-				return true;
-			}
-		   
-		}
-		return false;
-	}
-	
-	combodata GetSettingsCombo()
-	{
-		int cd = Game->GetCombo("GHOST");
-		if(cd) return Game->LoadComboData(cd);
-		else 
-		{
-			printf("No combo has the label GHOST.\n");
-			return NULL;
-		}
-		return Game->Ghost[GHV_SETTINGS_COMBO];
-	}
-	int GetInvisibleComboID()
-	{
-		return Game->Ghost[GHV_SETTINGS_COMBO_ID];
-	}
-	int GetInvisibleComboTile()
-	{
-		return Game->Ghost[GHV_BLANK_TILE];
-	}
+	// Set this so it doesn't conflict with other scripts. Legal values are 0-31.
+	const int GHI_NPC_DATA = 15; //! Nothing uses this now, and in any event it should be set by the combo.
 	
 	enum InitTypes
 	{
@@ -140,6 +113,7 @@ namespace ghost3
 		GHV_PREFER_GHOST_ZH_SHADOWS, //flag
 		GHV_FIX_255_ANONE, //flag
 		GHV_WEAPONS_HIT_PLATFORMS, //flag
+		GHV_SPRITE_ARRAY_MISC_INDEX, //int
 		
 		//Legacy
 		GHV_FLASH_TIME, //byte
@@ -162,11 +136,7 @@ namespace ghost3
 		
 	};
 	
-	bool initialised()
-	{
-		return (Game->Ghost[GHV_INITIALISED]&0x1);
-	}
-	
+	// Call at the start of every script immediately following the data[] array declaration.
 	void init(npc ghost, untyped ptr)
 	{
 		if (sysinit() )
@@ -179,6 +149,7 @@ namespace ghost3
 		}
 	}
 	
+	// Initialises the environment.
 	int sysinit()
 	{
 		if ( initialised() ) return INIT_ALREADY;
@@ -198,45 +169,7 @@ namespace ghost3
 		return INIT_SUCCESS;
 	}
 	
-	/*
-	
-		Ghost Setup Combo Properties
-		ID: Must be 1 or higher; the lower, the better.
-		Tile: Should be blank.
-		ATTRIBYTES
-		[0] Min ffc used by ghost, must be 1-32
-		[1] Max ffc used by ghost, must be 1-32 and greater or equal to [0].
-		[2] Spawn sprite, 0 to 255
-		[3] Default enemy walking imprecision. (usually set to '2')
-	
-		ATTRIBUTES
-		[0] (Unused)
-		[1] (Unused)
-		[2] (Unused)
-		[3] (Unused)
-	
-		FLAGS
-		Flag 1: Fake Z (if ENABLED), Engine Z (if NOT ENABLED)
-		Flag 2: Enemies flicker (if ENABLED), Engine hit effect (if NOT ENABLED)
-		Flag 3: Scripted shadows (if ENABLED), Engine shadows (if NOT ENABLED)
-		Flag 4: Fixed ANONE handling (if NOT ENABLED), broken ANONE (if ENABLED)
-		Flag 5: Fixed sideview platform weapon handling/solidity/collision (if NOT ENABLED), broken ghost sideview weapons (if ENABLED)
-		Flag 6: FFCs made by GHost are Ethereal (if NOT ENABLED), or are NOT ETHEREAL (if ENABLED)
-		Flag 7: FFC->Link is cleared when an ffc is used (if NOT Enabled), Link to other ffcs is NOT cleared (if ENABLED)
-		Flag 8: Corrected EWM_FALL (if NOT ENABLED), broken EWM_FALL (if ENABLED).
-		Flag 9: Corrected EWM_THROW (if NOT ENABLED), broken EWM_THROW (if ENABLED).
-		Flag 10: Fake Weapon Z (if ENABLED), no fake weapon Z (if NOT ENABLED)
-		Flag 11
-		Flag 12
-		Flag 13
-		Flag 14
-		Flag 15
-		Flag 16
-	
-	
-	
-	*/
-	
+	// Constructs the environmental settings. 
 	int RunSetupCombo()
 	{
 		int cid = Game->GetCombo("GHOST");
@@ -275,8 +208,42 @@ namespace ghost3
 		Game->Ghost[GHV_FIX_EWM_THROW_DEP] = (cd->UserFlags&0x100) ? 0 : 1; //default on
 		Game->Ghost[GHV_FAKE_EWEAPON_Z] = (cd->UserFlags&0x200) ? 0 : 1; //default off
 		
+		Game->Ghost[GHV_SPRITE_ARRAY_MISC_INDEX] = cd->Attribytes[0];
+		
 		return INIT_SUCCESS;
 	}
+	
+	// Returns whether the system has been initialised. 
+	bool initialised()
+	{
+		return (Game->Ghost[GHV_INITIALISED]&0x1);
+	}
+	
+	// Gets the ID of the settings combo as combodata. 
+	combodata GetSettingsCombo()
+	{
+		int cd = Game->GetCombo("GHOST");
+		if(cd>0) return Game->LoadComboData(cd);
+		else 
+		{
+			printf("No combo has the label GHOST.\n");
+			return NULL;
+		}
+		return Game->Ghost[GHV_SETTINGS_COMBO];
+	}
+	
+	// Easy to remember way to get an invisible combo.
+	int GetInvisibleComboID()
+	{
+		return Game->Ghost[GHV_SETTINGS_COMBO_ID];
+	}
+	
+	//Easy way to get an invisible tile block. 
+	int GetInvisibleComboTile()
+	{
+		return Game->Ghost[GHV_BLANK_TILE];
+	}
+	
 	// Used for old ffc setup. Will be in 2.9, so I am putting it here for now so that I do not forget it int he 2.9 refactor.
 	// Please do not delete this. -Z
 	int RunLegacySetup()
@@ -301,6 +268,7 @@ namespace ghost3
 		
 	}
 	
+	// Sets up Ghost 2.9.x shadow tiles, if we use those at all. 
 	int SetupShadowTiles()
 	{
 		combodata shad1, shad2;
@@ -336,8 +304,38 @@ namespace ghost3
 		Game->Ghost[GHV_LARGE_SHADOW_MIN_HEIGHT] = shad2->Attributes[1];
 		return INIT_SUCCESS;
 	}
+	
+	// Returns true if enemies are visible on screens with the
+	// "All Enemies Are Invisible" flag enabled
+	bool HaveAmulet()
+	{
+	    if ( Link->Item[I_AMULET1] )
+	    {
+		return true;
+	    }
+	    if ( Link->Item[I_AMULET2] )
+	    {
+		return true;
+	    }
+	    return false;
+	}
+	
+	// Used to determine if a weapon hit a platform in sideview.
+	bool OnSidePlatform(int x, int y, int xOff, int yOff, int h, int w) 
+	{
+		unless (IsSideview()) return false;
+		for(int i = 0; i <= (w-1); ++i)
+		{
+			if( Screen->isSolid( (x + xOff + i), (y + yOff) + h ) )
+			{
+				return true;
+			}
+		   
+		}
+		return false;
+	}
+	
 }
-// End advanced settings -------------------------------------------------------
 
 #include "std.zh"
 #include "ghost_zh/3.0/ghost3_common.zh"
