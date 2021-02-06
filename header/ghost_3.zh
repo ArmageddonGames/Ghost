@@ -51,7 +51,7 @@ namespace ghost3
 	// Registers of the data[] array, used for every script
 	enum DataRegisters
 	{
-		GHI_FLAGS,`	//GHF_, first 16
+		GHI_FLAGS,	//GHF_, first 16
 		GHI_FLAGS2,	//GHF_ second 16
 		GHI_IFLAGS,	//GHFI_ internal enemy flags
 		GHI_PREVX,	//Positional updates
@@ -139,13 +139,14 @@ namespace ghost3
 	// Call at the start of every script immediately following the data[] array declaration.
 	void init(npc ghost, untyped ptr)
 	{
-		if (sysinit() )
+		if (sysinit())
 		{
 			ghost->Misc[GH_INTERNAL] = ptr;
 		}
 		else
 		{
 			printf("Could not initialise ghosted npc.\n");
+			ghost->Remove();
 		}
 	}
 	

@@ -15,12 +15,13 @@ ffc script cheatson
 @Author("Dimi")
 npc script G3_Example1
 {
+	using namespace ghost3::flags;
 	void run()
 	{
-		int data[DATA_SIZE]; //Always first
+		int data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
-		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 32, 0, ghost3::EWF_NO_COLLISION);
+		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 32, 0, EWF_NO_COLLISION);
 		ghost3::SetEWeaponLifespan(fakeparticle, ghost3::EWL_TIMER, 15);
 		ghost3::SetEWeaponDeathEffect(fakeparticle, ghost3::EWD_VANISH, -1);
 		ghost3::SetEWeaponSparkleFrequency(fakeparticle, 4);
@@ -47,7 +48,7 @@ npc script G3_Example1
 			}
 			else
 			{
-				if ((shotcounter % 30))
+				if ((shotcounter % 30) == 0)
 				{
 					int angle = Angle(this->X, this->Y, Hero->X, Hero->Y);
 					this->Dir = AngleDir4(angle);
@@ -74,12 +75,13 @@ npc script G3_Example1
 @Author("Dimi")
 npc script G3_Example2
 {
+	using namespace ghost3::flags;
 	void run()
 	{
-		int data[DATA_SIZE]; //Always first
+		int data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
-		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 97, 0, ghost3::EWF_NO_COLLISION);
+		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 97, 0, EWF_NO_COLLISION);
 		ghost3::SetEWeaponLifespan(fakeparticle, ghost3::EWL_TIMER, 20);
 		ghost3::SetEWeaponDeathEffect(fakeparticle, ghost3::EWD_VANISH, -1);
 		ghost3::SetEWeaponSparkleFrequency(fakeparticle, 4);
@@ -104,9 +106,10 @@ npc script G3_Example2
 @Author("Dimi")
 npc script G3_Example3
 {
+	using namespace ghost3::flags;
 	void run()
 	{
-		int data[DATA_SIZE]; //Always first
+		int data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, this->WeaponDamage, 87, 0, 0);
@@ -132,9 +135,10 @@ npc script G3_Example3
 @Author("Dimi")
 npc script G3_Example4
 {
+	using namespace ghost3::flags;
 	void run()
 	{
-		int data[DATA_SIZE]; //Always first
+		int data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		int shotcounter;
@@ -155,9 +159,10 @@ npc script G3_Example4
 @Author("Dimi")
 npc script G3_Example5
 {
+	using namespace ghost3::flags;
 	void run()
 	{
-		int data[DATA_SIZE]; //Always first
+		int data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		int shotcounter;
