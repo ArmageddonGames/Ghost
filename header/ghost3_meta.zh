@@ -25,7 +25,7 @@ namespace ghost3
 		const int HOUR 		= 18;
 		const int MINUTE 	= 44;
 		
-		const int TIMEZEONE = GMT;
+		const timezone TIMEZEONE = GMT;
 		
 		
 		
