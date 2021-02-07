@@ -7,6 +7,11 @@ namespace ghost3
 		{
 			ALPHA, BETA, GAMMA, RELEASE
 		};
+		
+		enum timezones
+		{
+			GMT, PST, CST, EST
+		};
 		const int VERSION 	= 3;
 		const int SUBVERSION 	= 0;
 		const int PATCHVERSION 	= 0;
@@ -20,6 +25,10 @@ namespace ghost3
 		const int HOUR 		= 13;
 		const int MINUTE 	= 24;
 		
+		const int TIMEZEONE = GMT;
+		
+		
+		
 		int print()
 		{
 			char32 buildstatus[]={"ALPHA","BETA","GAMMA","RELEASE"};
@@ -30,10 +39,12 @@ namespace ghost3
 			
 			char32 months[] = { "January", "February", "March", "April", "May", "June", "July", 
 				"August", "September", "October", "November", "December" };
+				
+			char32 tzone[]= { " GMT", " PST", " CST", " EST" };
 			char32 dte[5]; 
 			appendDay(DAY, dte);	
 			char32 datestr[256];
-			sprintf(datestr, "Last revised on %s, %s %d at %d:%d hours GMT\n", dte, months[MONTH], YEAR, HOUR, MINUTE); 
+			sprintf(datestr, "Last revised on %s, %s %d at %d:%d hours %s\n", dte, months[MONTH], YEAR, HOUR, MINUTE, tzone[TIMEZEONE]); 
 			TraceS(versstr);
 			TraceS(datestr);
 			
