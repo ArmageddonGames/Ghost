@@ -1,0 +1,115 @@
+namespace ghost3
+{
+	
+	zstruct Metadata
+	{
+		enum statustype 
+		{
+			ALPHA, BETA, GAMMA, RELEASE
+		};
+		const int VERSION 	= 3;
+		const int SUBVERSION 	= 0;
+		const int PATCHVERSION 	= 0;
+		
+		const statustype STATUS = ALPHA;
+		const int STATUSBUILD 	= 6;
+		
+		const int YEAR 		= 2021;
+		const int MONTH 	= 2;
+		const int DAY 		= 7;
+		const int HOUR 		= 8;
+		const int MINUTE 	= 58;
+		
+		int print()
+		{
+			char32 vers[16];
+			char32 a[4];
+			itoa(a,VERSION);
+			strcat(vers, a);
+			strcat(vers, ".");
+			
+			itoa(a,SUBVERSION);
+			strcat(vers, a);
+			strcat(vers, ".");
+			
+			itoa(a,PATCHVERSION);
+			strcat(vers, a);
+			
+			vers[5] = NULL;
+			char32 sts[16];
+			itoa(a,STATUSBUILD);
+			switch(STATUS)
+			{
+				case ALPHA:
+				strcpy(sts, "ALPHA "); break;
+				case BETA:
+				strcpy(sts, "BETA "); break;
+				case BETA:
+				strcpy(sts, "GAMMA "); break;
+				case BETA:
+				strcpy(sts, "RELEASE "); break;
+			}
+			strcat(sts, a);
+			printf("Ghost Version %s, %s\n", vers, sts);
+			
+			//Date and time
+			
+			char32 months[] = { "January", "February", "March", "April", "May", "June", "July", 
+				"August", "September", "October", "November", "December" };
+				
+			
+			
+			char32 dte[256]; 
+			appendDay(DAY, dte);
+			strcat(dte, ", ");
+			strcat(dte, months[MONTH]);
+			strcat(dte, ", ");
+			char32 yr[5];
+			itoa(yr,YEAR);
+			strcat(dte, yr);
+			
+			//time
+			
+			char32 tm[7];
+			itoa(tm,HOUR);
+			char32 mnt[3];
+			itoa(mnt,MINUTE);
+			strcat(tm, ":");
+			strcat(tm, mnt);
+			
+			printf("Last revised on %s, at %s hours GMT.\n", dte, tm);
+		}
+		void appendDay(int d, char32 ptr)
+		{
+			int tmp[5];
+			itoa(tmp,d);
+			switch(d)
+			{
+				//nd
+				case 2:
+				case 22:
+					strcat(tmp, "nd");
+					break;
+				//rd
+				case 3:
+				case 23:
+					strcat(tmp, "rd");
+					break;
+				//st
+				default:
+					strcat(tmp, "th");
+					break;
+			}
+			strcpy(ptr, tmp);
+		}
+	}
+	
+	//global script test
+	//{
+	//	void run()
+	//	{
+	//		MetaData.print();
+	//	}
+	//}
+	
+}

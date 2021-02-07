@@ -40,7 +40,7 @@ namespace ghost3
 		Flag 8: Corrected EWM_FALL (if NOT ENABLED), broken EWM_FALL (if ENABLED).
 		Flag 9: Corrected EWM_THROW (if NOT ENABLED), broken EWM_THROW (if ENABLED).
 		Flag 10: Fake Weapon Z (if ENABLED), no fake weapon Z (if NOT ENABLED)
-		Flag 11
+		Flag 11: Print Metadata (if NOT ENABLED), do not print Metadata (if ENABLED)
 		Flag 12
 		Flag 13
 		Flag 14
@@ -132,6 +132,9 @@ namespace ghost3
 		GHV_FIX_EWM_FALL_DEP, //flag
 		GHV_FIX_EWM_THROW_DEP, //flag
 		
+		//Metadata
+		GHV_PRINT_METADATA, //flag
+		
 		GHV_LAST
 		
 	};
@@ -167,6 +170,10 @@ namespace ghost3
 		// More System Values Here. All settings ^^ABOVE^^ to be moved to combodata.
 		// so that they are tileset-based!!!
 		Game->Ghost[GHV_INITIALISED] |= 0x1;
+		if ( Game->Ghost[GHV_PRINT_METADATA] ) 
+		{
+			Metadata.print();
+		}
 		return INIT_SUCCESS;
 	}
 	
@@ -207,7 +214,8 @@ namespace ghost3
 		Game->Ghost[GHV_CLEAR_FFC_LINK_DEP] = (cd->UserFlags&0x40) ? 0 : 1; //default on
 		Game->Ghost[GHV_FIX_EWM_FALL_DEP] = (cd->UserFlags&0x80) ? 0 : 1; //default on
 		Game->Ghost[GHV_FIX_EWM_THROW_DEP] = (cd->UserFlags&0x100) ? 0 : 1; //default on
-		Game->Ghost[GHV_FAKE_EWEAPON_Z] = (cd->UserFlags&0x200) ? 0 : 1; //default off
+		Game->Ghost[GHV_FAKE_EWEAPON_Z] = (cd->UserFlags&0x200) ? 1 : 0; //default off
+		Game->Ghost[GHV_PRINT_METADATA] = (cd->UserFlags&0x400) ? 0 : 1; //default on
 		
 		Game->Ghost[GHV_SPRITE_ARRAY_MISC_INDEX] = cd->Attribytes[0];
 		
@@ -339,6 +347,7 @@ namespace ghost3
 }
 
 #include "std.zh"
+#include "ghost3_meta.zh"
 #include "ghost_zh/3.0/ghost3_common.zh"
 #include "ghost_zh/3.0/ghost3_weapons.zh"
 #include "ghost_zh/3.0/ghost3_flags.zh"
