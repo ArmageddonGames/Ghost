@@ -17,8 +17,8 @@ namespace ghost3
 		const int YEAR 		= 2021;
 		const int MONTH 	= 2;
 		const int DAY 		= 7;
-		const int HOUR 		= 8;
-		const int MINUTE 	= 58;
+		const int HOUR 		= 10;
+		const int MINUTE 	= 7;
 		
 		int print()
 		{
@@ -35,7 +35,7 @@ namespace ghost3
 			itoa(a,PATCHVERSION);
 			strcat(vers, a);
 			
-			vers[5] = NULL;
+			vers[15] = NULL;
 			char32 sts[16];
 			itoa(a,STATUSBUILD);
 			switch(STATUS)
