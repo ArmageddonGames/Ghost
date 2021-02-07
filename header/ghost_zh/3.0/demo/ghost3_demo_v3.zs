@@ -15,22 +15,27 @@ ffc script cheatson
 @Author("Dimi")
 npc script G3_Example1
 {
-	using namespace ghost3::flags;
+	using namespace ghost3; //Ghost is now in a namespace. You now have three options when it comes to making ghost scipts:
+				//This is the first one. Putting this line means you don't have to do any annoying prefixing
+				//To access ghost's internal stuff. The second option isn't shown off in this demo, but you can
+				//put this line outside of any scripts to allow usage anywhere.
 	void run()
 	{
-		int data[ghost3::DATA_SIZE]; //Always first
-		ghost3::init(this, data); //Always second
+		int data[DATA_SIZE]; //Always first
+		init(this, data); //Always second
 		
-		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 32, 0, EWF_NO_COLLISION);
-		ghost3::SetEWeaponLifespan(fakeparticle, ghost3::EWL_TIMER, 15);
-		ghost3::SetEWeaponDeathEffect(fakeparticle, ghost3::EWD_VANISH, -1);
-		ghost3::SetEWeaponSparkleFrequency(fakeparticle, 4);
+		eweapon fakeparticle = CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 32, 0, EWF_NO_COLLISION);
+		SetEWeaponLifespan(fakeparticle, EWL_TIMER, 15);
+		SetEWeaponDeathEffect(fakeparticle, EWD_VANISH, -1);
+		SetEWeaponSparkleFrequency(fakeparticle, 4);
 		fakeparticle->Behind = true;
 		int shotcounter;
 		this->NoSlide = true;
 		while(true)
 		{
-			ghost3::UpdateKnockback(this, 16, 4);
+			this->CanMove({this->Dir,1,SPW_WIZZROBE});
+			this->CanMove({this->Dir,1,SPW_WIZZROBE});
+			UpdateKnockback(this, 16, 4);
 			++shotcounter;
 			shotcounter%=((90*4)+(30*4)+30);
 			if (shotcounter <= (90*4)+30)
@@ -38,12 +43,12 @@ npc script G3_Example1
 				this->ConstantWalk({this->Rate, this->Homing, 0});
 				if (shotcounter % 90 == 0 && shotcounter > 0)
 				{
-					eweapon e = ghost3::FireAimedEWeapon(EW_FIREBALL, this->X, this->Y, 0, 200, this->WeaponDamage, -1, -1, 0);
-					ghost3::SetEWeaponMovement(e, ghost3::EWM_HOMING_REAIM, 1, 45);
-					ghost3::SetEWeaponLifespan(e, ghost3::EWL_TIMER, 90);
-					ghost3::SetEWeaponDeathEffect(e, ghost3::EWD_4_FIREBALLS_DIAG, -1);
-					ghost3::SetEWeaponSparkle(e, fakeparticle);
-					ghost3::SetEWeaponAttribute(e, ghost3::GWI_PARTICLEOFFSET, 2);
+					eweapon e = FireAimedEWeapon(EW_FIREBALL, this->X, this->Y, 0, 200, this->WeaponDamage, -1, -1, 0);
+					SetEWeaponMovement(e, EWM_HOMING_REAIM, 1, 45);
+					SetEWeaponLifespan(e, EWL_TIMER, 90);
+					SetEWeaponDeathEffect(e, EWD_4_FIREBALLS_DIAG, -1);
+					SetEWeaponSparkle(e, fakeparticle);
+					SetEWeaponAttribute(e, GWI_PARTICLEOFFSET, 2);
 				}
 			}
 			else
@@ -55,19 +60,19 @@ npc script G3_Example1
 					angle = DegtoRad(angle);
 					for(int i = 0; i < 5; ++i)
 					{
-						eweapon e = ghost3::FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
-						ghost3::SetEWeaponMovement(e, ghost3::EWM_SINE_WAVE, 8, 6);
-						eweapon e2 = ghost3::FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
-						ghost3::SetEWeaponMovement(e2, ghost3::EWM_SINE_WAVE, 8, 6);
-						ghost3::SetEWeaponAttribute(e2, ghost3::GWI_MISC1, 120);
-						eweapon e3 = ghost3::FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
-						ghost3::SetEWeaponMovement(e3, ghost3::EWM_SINE_WAVE, 8, 6);
-						ghost3::SetEWeaponAttribute(e3, ghost3::GWI_MISC1, 240);
-						repeat(5) ghost3::Ghost_Waitframe(this, ghost3::GHD_EXPLODE, true);
+						eweapon e = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
+						SetEWeaponMovement(e, EWM_SINE_WAVE, 8, 6);
+						eweapon e2 = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
+						SetEWeaponMovement(e2, EWM_SINE_WAVE, 8, 6);
+						SetEWeaponAttribute(e2, GWI_MISC1, 120);
+						eweapon e3 = FireEWeapon(EW_FIREBALL, this->X, this->Y, angle, 300, this->WeaponDamage, -1, -1, 0);
+						SetEWeaponMovement(e3, EWM_SINE_WAVE, 8, 6);
+						SetEWeaponAttribute(e3, GWI_MISC1, 240);
+						repeat(5) Ghost_Waitframe(this, GHD_EXPLODE, true);
 					}
 				}
 			}
-			ghost3::Ghost_Waitframe(this, ghost3::GHD_EXPLODE, true);
+			Ghost_Waitframe(this, GHD_EXPLODE, true);
 		}
 	}
 }
@@ -75,13 +80,16 @@ npc script G3_Example1
 @Author("Dimi")
 npc script G3_Example2
 {
-	using namespace ghost3::flags;
+	//This script uses the third method of ghost scripts. It doesn't have the "using" line at the beginning;
+	//Instead ghost's functions and constants and etc are accessed via ghost3::(thingname)
+	//This is the most annoying method, but Zoria wanted to show it off for whatever reason?
+	//Personally I think it's dumb. You should do either the method shown above or the method mentioned above
 	void run()
 	{
 		int data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
-		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 97, 0, EWF_NO_COLLISION);
+		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 97, 0, ghost3::EWF_NO_COLLISION);
 		ghost3::SetEWeaponLifespan(fakeparticle, ghost3::EWL_TIMER, 20);
 		ghost3::SetEWeaponDeathEffect(fakeparticle, ghost3::EWD_VANISH, -1);
 		ghost3::SetEWeaponSparkleFrequency(fakeparticle, 4);
@@ -106,16 +114,16 @@ npc script G3_Example2
 @Author("Dimi")
 npc script G3_Example3
 {
-	using namespace ghost3::flags;
+	using namespace ghost3;
 	void run()
 	{
-		int data[ghost3::DATA_SIZE]; //Always first
-		ghost3::init(this, data); //Always second
+		int data[DATA_SIZE]; //Always first
+		init(this, data); //Always second
 		
-		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, this->WeaponDamage, 87, 0, 0);
-		ghost3::SetEWeaponLifespan(fakeparticle, ghost3::EWL_TIMER, 30);
-		ghost3::SetEWeaponDeathEffect(fakeparticle, ghost3::EWD_AIM_AT_LINK, 0);
-		ghost3::SetEWeaponSparkleFrequency(fakeparticle, 4);
+		eweapon fakeparticle = CreateDummyEWeapon(EW_SCRIPT1, 0, this->WeaponDamage, 87, 0, 0);
+		SetEWeaponLifespan(fakeparticle, EWL_TIMER, 30);
+		SetEWeaponDeathEffect(fakeparticle, EWD_AIM_AT_LINK, 0);
+		SetEWeaponSparkleFrequency(fakeparticle, 4);
 		fakeparticle->Behind = true;
 		int shotcounter;
 		while(true)
@@ -124,10 +132,10 @@ npc script G3_Example3
 			++shotcounter;
 			if (shotcounter % 180 == 60)
 			{
-				eweapon e = ghost3::FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, 0, 300, this->WeaponDamage, 98, -1, 0);
-				ghost3::SetEWeaponSparkle(e, fakeparticle);
+				eweapon e = FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, 0, 300, this->WeaponDamage, 98, -1, 0);
+				SetEWeaponSparkle(e, fakeparticle);
 			}
-			ghost3::Ghost_Waitframe(this, ghost3::GHD_SHRINK, true);
+			Ghost_Waitframe(this, GHD_SHRINK, true);
 		}
 	}
 }
@@ -135,11 +143,11 @@ npc script G3_Example3
 @Author("Dimi")
 npc script G3_Example4
 {
-	using namespace ghost3::flags;
+	using namespace ghost3;
 	void run()
 	{
-		int data[ghost3::DATA_SIZE]; //Always first
-		ghost3::init(this, data); //Always second
+		int data[DATA_SIZE]; //Always first
+		init(this, data); //Always second
 		
 		int shotcounter;
 		while(true)
@@ -148,10 +156,10 @@ npc script G3_Example4
 			++shotcounter;
 			if (shotcounter % 60 == 30)
 			{
-				eweapon e = ghost3::FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, DegtoRad(180)+Rand(-0.4, 0.4), 200, this->WeaponDamage, 13, -1, 0);
-				ghost3::SetEWeaponMovement(e, ghost3::EWM_VEER, ghost3::AngleDir8(this->X, this->Y, Hero->X, Hero->Y), 0.07);
+				eweapon e = FireAimedEWeapon(EW_SCRIPT1, this->X, this->Y, DegtoRad(180)+Rand(-0.4, 0.4), 200, this->WeaponDamage, 13, -1, 0);
+				SetEWeaponMovement(e, EWM_VEER, AngleDir8(this->X, this->Y, Hero->X, Hero->Y), 0.07);
 			}
-			ghost3::Ghost_Waitframe(this, ghost3::GHD_NONE, true);
+			Ghost_Waitframe(this, GHD_NONE, true);
 		}
 	}
 }
@@ -159,7 +167,7 @@ npc script G3_Example4
 @Author("Dimi")
 npc script G3_Example5
 {
-	using namespace ghost3::flags;
+	//Another script that uses the tedious method. *sigh*
 	void run()
 	{
 		int data[ghost3::DATA_SIZE]; //Always first
@@ -184,63 +192,43 @@ npc script G3_Example5
 		}
 	}
 }
+
+npc script G3_Example6
+{
+	using namespace ghost3;
+	void run()
+	{
+		int data[DATA_SIZE]; //Always first
+		init(this, data); //Always second
+		while(true)
+		{
+			if (DoWizzrobeStuff(this, this->Step, this->Step*2, this->Homing, this->Homing, this->Rate, this->Rate, this->Haltrate, 8, 0))
+			{
+				this->Dir = NormalizeDir(this->Dir);
+				this->OriginalTile += 40;
+				this->Tile += 40;
+				int angle = DirAngle(this->Dir) - 45;
+				eweapon e = FireEWeapon(EW_SCRIPT1, this->X+VectorX(14, angle), this->Y+VectorY(14, angle), DegtoRad(angle), 0, this->WeaponDamage, 100, 30, EWF_ROTATE_360);
+				for (int i = 0; i < 90; i+=6)
+				{
+					e->X = this->X+VectorX(14, angle+i);
+					e->Y = this->Y+VectorY(14, angle+i);
+					e->Angle = DegtoRad(angle+i);
+					MoveAtAngle(this, DirAngle(this->Dir), this->Step/33, 2);
+					Ghost_Waitframe(this, GHD_NONE, true);
+				}
+				Remove(e);
+				this->OriginalTile -= 40;
+				this->Tile -= 40;
+			}
+			Ghost_Waitframe(this, GHD_NONE, true);
+		}
+	}
+}
 	
 // Temp Functions
 namespace ghost3
 {
-
-	int GetSlideTime(npc n)
-	{
-		return (n->SlideClock&0xFF);
-	}
-
-	int GetSlideDir(npc n)
-	{
-	    return ((n->SlideClock>>8));
-	}  
-
-	void SetSlideDir(npc n, int newdir)
-	{
-		if (Byte(newdir) > 3 )
-		{
-			printf("SetSlideDir: Direction must be 0-3. Attempted to use dir: %d\n", newdir);
-			return;
-		}
-		int newval;
-		int clk = (n->SlideClock&0xFF);
-		newdir << 8;
-		newval = (clk | (newdir<<8));
-		n->SlideClock = newval;
-	}
-
-	void SetSlideTime(npc n, int newtime)
-	{
-		if ( Word(newtime) > 255 )
-		{
-			printf("SetSlideTime: Direction must be 0-255. Attempted to use time: %d\n", newtime);
-			return;
-		}
-		int newval;
-		int dir = ((n->SlideClock>>8)<<8);
-		newval = newtime | dir;
-		n->SlideClock = newval;
-	}
-
-	void SetSlide(npc n, int newdir, int newtime)
-	{
-		if ( Byte(newdir) > 3 )
-		{
-			printf("SetSlide: Direction must be 0-3. Attempted to use dir: %d\n", newdir);
-			return;
-		}
-		if ( Word(newtime) > 255 )
-		{
-			printf("SetSlideTime: Direction must be 0-255. Attempted to use time: %d\n", newtime);
-			return;
-		}
-		n->SlideClock = (newtime |= (newdir << 8));
-	}
-
 	void UpdateKnockback(npc this, int frames, int speed)
 	{
 		this->NoSlide = true;

@@ -89,7 +89,18 @@ namespace ghost3
 		#option BINARY_32BIT on
 		return flagset & bits;
 	}
-	int set_bit(int flagset, int bits)
+	int set_bits(int flagset, int bits) //32 bit binary setter. Supports arrays of bits to be set.
+	{
+		#option BINARY_32BIT on
+		if (IsValidArray(bits))
+		{
+			for (int q = (SizeOfArray(bits)-1); q >= 0; --q) flagset |= bits[q];
+			
+			return flagset;
+		}
+		else return flagset | bits;
+	}
+	int set_bit(int flagset, int bits) //32 bit binary setter. Only allows single bits to be set.
 	{
 		#option BINARY_32BIT on
 		return flagset | bits;

@@ -3,32 +3,37 @@
 
 namespace ghost3
 {
-	using namespace flags;
-	namespace flags
+	
+	// EWeapon flags
+	enum
 	{
-		#option BINARY_32BIT on
-		// EWeapon flags
-		enum
-		{
-			EWF_UNBLOCKABLE = 		000000000001b, //0.0001
-			EWF_ROTATE = 			000000000010b, //0.0002
-			EWF_ROTATE_360 = 		000000000100b, //0.0004
-			EWF_SHADOW = 			000000001000b, //0.0008
-			EWF_FLICKER = 			000000010000b, //0.0016
-			EWF_NO_COLLISION = 		000000100000b, //0.0032
-			EWF_FAKE_Z = 			000001000000b, //0.0064
-			EWF_ALIVEOFFSCREEN = 		000010000000b, //0.0128
-			EWF_PIERCING = 			000100000000b  //0.0256
-		};
+		EWF_UNBLOCKABLE =               0.0001,  //0.0001 = 0000000000000001b
+		EWF_ROTATE =                    0.0002,  //0.0002 = 0000000000000010b
+		EWF_ROTATE_360 =                0.0004,  //0.0004 = 0000000000000100b
+		EWF_SHADOW =                    0.0008,  //0.0008 = 0000000000001000b
+		//4 bits
+		EWF_FLICKER =                   0.0016,  //0.0016 = 0000000000010000b
+		EWF_NO_COLLISION =              0.0032,  //0.0032 = 0000000000100000b
+		EWF_FAKE_Z =                    0.0064,  //0.0064 = 0000000001000000b
+		EWF_ALIVEOFFSCREEN =            0.0128,  //0.0128 = 0000000010000000b
+		//8 bits
+		EWF_PIERCING =                  0.0256,  //0.0256 = 0000000100000000b
+		EWF_RESERVED1 =                 0.0512,  //0.0512 = 0000001000000000b
+		EWF_RESERVED2 =                 0.1024,  //0.1024 = 0000010000000000b
+		EWF_RESERVED3 =                 0.2048,  //0.2048 = 0000100000000000b
+		//12 bits
+		EWF_RESERVED4 =                 0.4096,  //0.4096 = 0001000000000000b
+		EWF_RESERVED5 =                 0.8192,  //0.8192 = 0010000000000000b
+		EWF_RESERVED6 =                 1.6384,  //1.6384 = 0100000000000000b
+		EWF_RESERVED7 =                 3.2768   //3.2768 = 1000000000000000b //Anything past this is reserved for internal use only. See the next ENUM.
+	};
 
-		// Internal EWeapon flags
-		enum
-		{
-			EWFI_DEAD = 			00100000000000000000b,
-			EWFI_DEATH_EFFECT_DONE = 	01000000000000000000b,
-			EWFI_INTERNAL	= 		11100000000000000000b
-		};
-	}
+	// Internal EWeapon flags
+	enum
+	{
+		EWFI_DEAD =                     6.5536,  //6.5536 = 010000000000000000b
+		EWFI_DEATH_EFFECT_DONE =       13.1072 //13.1072 = 100000000000000000b
+	};
 	
 	// Arguments to SetEWeaponMovement()
 	enum EW_MovementType
@@ -1510,6 +1515,7 @@ namespace ghost3
 					e->Scale = this->Scale;
 				}
 			}
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1529,6 +1535,7 @@ namespace ghost3
 					e->Scale = this->Scale;
 				}
 			}
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1568,6 +1575,7 @@ namespace ghost3
 					}
 				}
 			}
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1587,6 +1595,7 @@ namespace ghost3
 					e->Scale = this->Scale;
 				}
 			}
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1595,6 +1604,7 @@ namespace ghost3
 			for(int i=0; i<4; ++i)
 				FireNonAngularEWeapon(EW_FIRE, CenterX(this)-8, CenterY(this)-8, i, 100, this->Damage/2, args[GWI_DEATHARG], 0, 0);
 			Game->PlaySound(SFX_FIRE); // Only play sound once
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1603,6 +1613,7 @@ namespace ghost3
 			for(int i=4; i<8; ++i)
 				FireNonAngularEWeapon(EW_FIRE, CenterX(this)-8, CenterY(this)-8, i, 71, this->Damage/2, args[GWI_DEATHARG], 0, 0);
 			Game->PlaySound(SFX_FIRE);
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1620,6 +1631,7 @@ namespace ghost3
 			}
 
 			Game->PlaySound(SFX_FIRE);
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1630,6 +1642,7 @@ namespace ghost3
 			for(int i=4; i<8; ++i)
 				FireNonAngularEWeapon(EW_FIRE, CenterX(this)-8, CenterY(this)-8, i, 71, this->Damage/2, args[GWI_DEATHARG], 0, 0);
 			Game->PlaySound(SFX_FIRE);
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1637,6 +1650,7 @@ namespace ghost3
 		{
 			FireNonAngularEWeapon(EW_FIRE, CenterX(this)-8, CenterY(this)-8, this->Dir, 0, this->Damage/2, args[GWI_DEATHARG], 0, 0);
 			Game->PlaySound(SFX_FIRE);
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
@@ -1645,6 +1659,7 @@ namespace ghost3
 			npc enemy=Screen->CreateNPC(args[GWI_DEATHARG]);
 			enemy->X=this->X;
 			enemy->Y=this->Y;
+			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);
 			this->DeadState=0;
 		}
 
