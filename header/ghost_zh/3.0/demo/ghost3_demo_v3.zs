@@ -2,9 +2,14 @@
 // Version 3.0.0 - Alpha 5
 
 // Demo Scripts, v.3.0
-namespace ghost3
-{
-	@Author("Dimi")
+
+
+namespace ghost3 //Ghost is now in a namespace. You now have three options when it comes to making ghost scipts:
+{                //This is the first one. Including the script in namespace ghost3 will let you access ghost's
+                 //functions and constants without prefixes (see third method).
+		 
+		 
+	@Author("Dimi") //This is a handy way of marking a script's author. Good practice!
 	ffc script cheatson
 	{
 		void run()
@@ -16,10 +21,11 @@ namespace ghost3
 	@Author("Dimi")
 	npc script G3_Example1
 	{
-		//using namespace ghost3; //Ghost is now in a namespace. You now have three options when it comes to making ghost scipts:
-					//This is the first one. Putting this line means you don't have to do any annoying prefixing
-					//To access ghost's internal stuff. The second option isn't shown off in this demo, but you can
-					//put this line outside of any scripts to allow usage anywhere.
+		//using namespace ghost3; //This is the second method. Putting this line at the top of your script will also allow you to access 
+		//ghost's functions and etc w/o prefix. You can also put this line outside of any scripts to allow usage anywhere.
+		//It is commented out because this script is already in a namespace.
+		//Keep in mind that the "using namespace" method may cause compatibility issues with Ghost 2.8 if you are mix and matching.
+		//Either upgrade 2.8 to 2.9 (if it's released), or don't mix n match if you want to use this method.
 		void run()
 		{
 			int data[DATA_SIZE]; //Always first
@@ -99,7 +105,7 @@ npc script G3_Example2
 		int shotcounter;
 		while(true)
 		{
-			ghost3::MoveAtAngle(this, Angle(this->X, this->Y, Hero->X, Hero->Y), this->Step/100, 2);
+			ghost3::MoveTowardLink(this, this->Step/100, 2);
 			++shotcounter;
 			if (shotcounter % 420 == 30)
 			{
@@ -201,6 +207,7 @@ npc script G3_Example5
 
 namespace ghost3
 {
+	//WizzrobeTeleport(npc this, int x, int y, int outframes, int inframes, int waittime, bool collflicker, DeathAnim deathtype, bool quitondeath)
 	npc script G3_Example6
 	{
 		//using namespace ghost3;
@@ -210,13 +217,13 @@ namespace ghost3
 			init(this, data); //Always second
 			while(true)
 			{
-				if (DoWizzrobeStuff(this, this->Step, this->Step*2, this->Homing, this->Homing, this->Rate, this->Rate, this->Haltrate, 8, 0))
+				if (DoWizzrobeStuff(this, this->Step, this->Step*2, this->Homing, this->Homing, this->Rate, this->Rate, this->Haltrate, 0, 8))
 				{
 					this->Dir = NormalizeDir(this->Dir);
 					this->OriginalTile += 40;
 					this->Tile += 40;
 					int angle = DirAngle(this->Dir) - 45;
-					eweapon e = FireEWeapon(EW_SCRIPT1, this->X+VectorX(14, angle), this->Y+VectorY(14, angle), DegtoRad(angle), 0, this->WeaponDamage, 100, 30, EWF_ROTATE_360);
+					eweapon e = FireEWeapon(EW_SCRIPT1, this->X+VectorX(14, angle), this->Y+VectorY(14, angle), DegtoRad(angle), 0, this->WeaponDamage, 100, 30, EWF_ROTATE_360|EWF_UNBLOCKABLE);
 					for (int i = 0; i < 90; i+=6)
 					{
 						e->X = this->X+VectorX(14, angle+i);
@@ -233,6 +240,86 @@ namespace ghost3
 			}
 		}
 	}
+	npc script G3_Example7
+	{
+		//using namespace ghost3;
+		void run()
+		{
+			RemoveSpawnPoof(this);
+			int data[DATA_SIZE]; //Always first
+			init(this, data); //Always second
+			WizzrobeTeleport(this, 0, 0, 64, 24, false, GHD_NONE, true);
+			while(true)
+			{
+				Ghost_Waitframes(this, 19);
+				this->Attack();
+				Ghost_Waitframes(this, 36);
+				WizzrobeTeleport(this, 0);
+			}
+		}
+	}
+	npc script G3_Example8
+	{
+		//using namespace ghost3;
+		void run()
+		{
+			int data[DATA_SIZE]; //Always first
+			init(this, data); //Always second
+			int segx[201];
+			int segy[201];
+			memset(segx, this->X, 201);
+			memset(segy, this->Y, 201);
+			this->DrawXOffset = -1000;
+			SetFlag(this, GHF_SET_DIRECTION);
+			SetFlag(this, GHF_8WAY);
+			int i; int hitclk; int cset = this->CSet;
+			eweapon e; int sinclk;
+			while(true)
+			{
+				if (hitclk > 0) 
+				{
+					this->CSet = 6 + ((hitclk>>1)%4);
+					--hitclk;
+				}
+				else this->CSet = cset;
+				if (GotHit(this)) hitclk = 32;
+				ArrayShift(segx, this->X, 1);
+				ArrayShift(segy, this->Y, 1);
+				ghost3::MoveAtAngle(this, Angle(this->X, this->Y, Hero->X, Hero->Y)+12*Sin(sinclk), this->Step/100, 2);
+				sinclk+=8;
+				i = 10;
+				e = FireEWeapon(EW_SCRIPT1, segx[i], segy[i], 0, 0, this->Damage, -1, 0, EWF_UNBLOCKABLE);
+				e->DrawXOffset = -1000;
+				SetEWeaponLifespan(e, EWL_TIMER, 2);
+				SetEWeaponDeathEffect(e, EWD_VANISH, -1);
+				Screen->DrawCombo(2, segx[i], segy[i], this->InitD[0]+1, 1, 1, this->CSet, -1, -1, segx[i], segy[i], Angle(segx[i], segy[i], segx[i-10], segy[i-10]), -1, 0, true, OP_OPAQUE);
+				Screen->DrawCombo(2, this->X, this->Y, this->InitD[0], 1, 1, this->CSet, -1, -1, this->X, this->Y, Angle(this->X, this->Y, Hero->X, Hero->Y)+8*Sin(sinclk), -1, 0, true, OP_OPAQUE);
+				for (i = 20; i <= 190; i+=10)
+				{
+					e = FireEWeapon(EW_SCRIPT1, segx[i], segy[i], 0, 0, this->Damage, -1, 0, EWF_UNBLOCKABLE);
+					e->DrawXOffset = -1000;
+					SetEWeaponLifespan(e, EWL_TIMER, 2);
+					SetEWeaponDeathEffect(e, EWD_VANISH, -1);
+					Screen->DrawCombo(2, segx[i], segy[i], this->InitD[0]+1, 1, 1, this->CSet, -1, -1, segx[i], segy[i], Angle(segx[i], segy[i], segx[i-10], segy[i-10]), -1, 0, true, OP_OPAQUE);
+				}
+				i = 200;
+				e = FireEWeapon(EW_SCRIPT1, segx[i], segy[i], 0, 0, this->Damage, -1, 0, EWF_UNBLOCKABLE);
+				e->DrawXOffset = -1000;
+				SetEWeaponLifespan(e, EWL_TIMER, 2);
+				SetEWeaponDeathEffect(e, EWD_VANISH, -1);
+				Screen->DrawCombo(2, segx[i], segy[i], this->InitD[0]+2, 1, 1, this->CSet, -1, -1, segx[i], segy[i], Angle(segx[i], segy[i], segx[i-10], segy[i-10]), -1, 0, true, OP_OPAQUE);
+				Ghost_Waitframe(this, GHD_NONE, true);
+			}
+		}
+	}
+	
+	void RemoveSpawnPoof(npc this)
+	{
+		int drawxoff = this->DrawXOffset;
+		this->DrawXOffset = -1000;
+		Waitframes(4);
+		this->DrawXOffset = drawxoff;
+	}
 		
 // Temp Functions
 	void UpdateKnockback(npc this, int frames, int speed)
@@ -248,6 +335,50 @@ namespace ghost3
 				{
 					this->Knockback(frames, hitby->Dir, speed);
 				}
+			}
+		}
+	}
+	//Shifts an array in a direction and sets the last one to a value.
+	void ArrayShift(untyped ptr, untyped value, int shifts)
+	{
+		unless(IsValidArray(ptr))
+		{
+			printf("Invalid array passred to std::arrayshift(untyped,untyped,int)\n");
+			return;
+		}
+		unless (SizeOfArray(ptr) > Abs(shifts))
+		{
+			printf("Shifts must be smaller than array size passed to std::arrayshift(untyped,untyped,int)\n");
+			return;
+		}
+		if (shifts == 0)
+		{
+			printf("Shifts must be greater than 0; std::arrayshift(untyped,untyped,int)\n");
+			return;
+		}
+		int q; 
+		if (shifts > 0)
+		{
+			for ( q = (SizeOfArray(ptr)-1); q >= shifts; --q) 
+			{
+				ptr[q] = ptr[q-shifts];
+			}
+			for (q = shifts-1; q >= 0; --q)
+			{
+				ptr[q] = value;
+			}
+		}
+		else
+		{
+			shifts = Abs(shifts);
+			int arrsize = (SizeOfArray(ptr)-1);
+			for (q = 0; q <= arrsize-shifts; ++q) 
+			{
+				ptr[q] = ptr[q+shifts];
+			}
+			for (q = arrsize-shifts+1; q <= arrsize; ++q)
+			{
+				ptr[q] = value;
 			}
 		}
 	}

@@ -25,7 +25,7 @@ namespace ghost3
 		const int HOUR 		= 18;
 		const int MINUTE 	= 44;
 		
-		const timezone TIMEZEONE = GMT;
+		const timezones TIMEZONE = GMT;
 		
 		
 		
@@ -44,7 +44,7 @@ namespace ghost3
 			char32 dte[5]; 
 			appendDay(DAY, dte);	
 			char32 datestr[256];
-			sprintf(datestr, "Last revised on %s, %s %d at %d:%d hours %s\n", dte, months[MONTH], YEAR, HOUR, MINUTE, tzone[TIMEZEONE]); 
+			sprintf(datestr, "Last revised on %s, %s %d at %d:%d hours %s\n", dte, months[MONTH], YEAR, HOUR, MINUTE, tzone[TIMEZONE]); 
 			TraceS(versstr);
 			TraceS(datestr);
 			

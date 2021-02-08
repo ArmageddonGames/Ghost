@@ -57,6 +57,8 @@ namespace ghost3
 		GHI_PREVX,	//Positional updates
 		GHI_PREVY,
 		GHI_DIR,
+		STOREDRAWX,
+		FLICKERCLK,
 		D0, D1, D2, D3,	//Generic data registers
 		D4, D5, D6, D7,
 		CLK0, CLK1,	// Clocks

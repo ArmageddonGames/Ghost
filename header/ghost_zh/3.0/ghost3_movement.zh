@@ -492,6 +492,17 @@ namespace ghost3
 		
 		return true;
 	}
+	
+	bool CanPlaceTile(npc ghost, int x, int y, bool inair)
+	{
+		x-=x%16;
+		y-=y%16;
+		unless(CanMovePixel(ghost, x, y, inair)&&CanMovePixel(ghost, x+8, y, inair)
+		&&CanMovePixel(ghost, x, y+8, inair)&&CanMovePixel(ghost, x+8, y+8, inair)) 
+			return false;
+		
+		return true;
+	}
 
 	//this assumes that a step of 2.5 pixels per frame is 2.5, not 250
 	bool CanMoveAtAngle(npc ghost, float angle, float step, int imprecision)
@@ -674,8 +685,7 @@ namespace ghost3
 	void WizzrobeAnimate(npc this)
 	{
 		int data = this->Misc[GH_INTERNAL];
-		if (data[CLK0] %4 < 2 && (data[D0] == 1 || data[D0] == 3)) this->DrawXOffset = -1000;
-		else this->DrawXOffset = 0;
+		if (data[D0] == 1 || data[D0] == 3) WizzrobeFlicker(this);
 	}
 	
 	bool DoWizzrobeStuff(npc this, int walkstep, int phasestep, int walkhoming, int phasehoming, int walkrate, int phaserate, int haltrate, int attackstyle, int attackrange)
@@ -788,76 +798,364 @@ namespace ghost3
 				this->Y=(this->Y&0xF0)+((this->Y&8)?16:0);
 		}
 	}
-	/*
-	void WizzrobeTeleport()
+	//! Wizzrobe Values
+	const int TELEPORTTIME_IN = 18;
+	const int TELEPORTTIME_OUT = 64;
+	const int TELEPORTTIME_WAIT = 74;
+	const int WIZZROBE_INVISIBLE = 0;
+	enum
 	{
-		switch(clk)
+		WIZZTELE_X,
+		WIZZTELE_Y,
+		WIZZTELE_DIR,
+		WIZZTELE_LAST
+	};
+	void WizzrobeTeleport(npc this, int x, int y, int dir, int outframes, int inframes, int waittime, bool collflicker, DeathAnim deathtype, bool quitondeath)
+	{
+		//default outframes = 18;
+		//default inframes = 64;
+		//Wizzrobe waits for 19 frames between fading in and firing; 9 before firing animation and 10 after that before firing.
+		//Wizzrobe then waits for 36 frames after that before resuming the regular animation,
+		//Then 9 frames after that before fading out (45 total).
+		//Total of 54 frames between teleports.
+		//Then it waits dmisc5 frames before selecting a new position.
+		//Jesus christ dissecting the engine code to understand this was a headache.
+		int data = this->Misc[GH_INTERNAL];
+		bool colldet;
+		WizzrobeTeleportAnim(this, outframes, collflicker, deathtype, quitondeath);
+		colldet = this->CollDetection;
+		this->CollDetection = false;
+		for (int i = 0; i < waittime; ++i)
 		{
-			case 0:
-				if(!dmisc2)
-				{
-			// Wizzrobe Misc4 controls whether wizzrobes can teleport on top of solid combos,
-			// but should not appear on dungeon walls.	
-					if ( FFCore.getQuestHeaderInfo(vZelda) <= 0x190 ) place_on_axis(true, false); //1.84, and probably 1.90 wizzrobes should NEVER appear in dungeon walls.-Z (1.84 confirmed, 15th January, 2019 by Chris Miller).
-					else if ( (FFCore.getQuestHeaderInfo(vZelda) == 0x210 || FFCore.getQuestHeaderInfo(vZelda) == 0x192 ) && id == eWWIZ && FFCore.emulation[emu210WINDROBES] ) 
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+			Ghost_Waitframe(this, deathtype, quitondeath);
+		}
+		this->X = x;
+		this->Y = y;
+		this->Dir = dir;
+		this->CollDetection = colldet;
+		WizzrobeTeleportAnim(this, inframes, collflicker, deathtype, quitondeath);
+	}
+	void WizzrobeTeleportAnim(npc this, int frames, bool collflicker, DeathAnim deathtype, bool quitondeath)
+	{
+		for (int i = 0; i < frames; ++i)
+		{
+			unless(collflicker) this->Stun = 2;
+			WizzrobeFlicker(this);
+			Ghost_Waitframe(this, deathtype, quitondeath);
+		}
+	}
+	void WizzrobeTeleportAnim(npc this, int frames, bool collflicker)
+	{
+		for (int i = 0; i < frames; ++i)
+		{
+			unless(collflicker) this->Stun = 2;
+			WizzrobeFlicker(this);
+			Ghost_Waitframe(this, GHD_NONE, true);
+		}
+	}
+	void WizzrobeFlicker(npc this)
+	{
+		int data = this->Misc[GH_INTERNAL];
+		if (data[FLICKERCLK]&10b) 
+		{
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+		}
+		else this->BFlags[WIZZROBE_INVISIBLE]  = false;
+		++data[FLICKERCLK];
+	}
+	void WizzrobeTeleport(npc this, int teletype, int outframes, int inframes, int waittime, bool collflicker, DeathAnim deathtype, bool quitondeath)
+	{
+		int data = this->Misc[GH_INTERNAL];
+		bool colldet;
+		WizzrobeTeleportAnim(this, outframes, collflicker, deathtype, quitondeath);
+		colldet = this->CollDetection;
+		this->CollDetection = false;
+		for (int i = 0; i < waittime; ++i)
+		{
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+			Ghost_Waitframe(this, deathtype, quitondeath);
+		}
+		int arr[WIZZTELE_LAST];
+		WizzrobeGetPos(this, arr, teletype);
+		this->X = arr[WIZZTELE_X];
+		this->Y = arr[WIZZTELE_Y];
+		this->Dir = arr[WIZZTELE_DIR];
+		this->CollDetection = colldet;
+		WizzrobeTeleportAnim(this, inframes, collflicker, deathtype, quitondeath);
+	}
+	void WizzrobeTeleport(npc this, int teletype, int waittime, bool collflicker, DeathAnim deathtype, bool quitondeath)
+	{
+		int data = this->Misc[GH_INTERNAL];
+		bool colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_IN, collflicker, deathtype, quitondeath);
+		colldet = this->CollDetection;
+		this->CollDetection = false;
+		for (int i = 0; i < waittime; ++i)
+		{
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+			Ghost_Waitframe(this, deathtype, quitondeath);
+		}
+		int arr[WIZZTELE_LAST];
+		WizzrobeGetPos(this, arr, teletype);
+		this->X = arr[WIZZTELE_X];
+		this->Y = arr[WIZZTELE_Y];
+		this->Dir = arr[WIZZTELE_DIR];
+		this->CollDetection = colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_OUT, collflicker, deathtype, quitondeath);
+	}
+	void WizzrobeTeleport(npc this, int teletype, int waittime, DeathAnim deathtype, bool quitondeath)
+	{
+		int data = this->Misc[GH_INTERNAL];
+		bool colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_IN, true, deathtype, quitondeath);
+		colldet = this->CollDetection;
+		this->CollDetection = false;
+		for (int i = 0; i < waittime; ++i)
+		{
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+			Ghost_Waitframe(this, deathtype, quitondeath);
+		}
+		int arr[WIZZTELE_LAST];
+		WizzrobeGetPos(this, arr, teletype);
+		this->X = arr[WIZZTELE_X];
+		this->Y = arr[WIZZTELE_Y];
+		this->Dir = arr[WIZZTELE_DIR];
+		this->CollDetection = colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_OUT, true, deathtype, quitondeath);
+	}
+	void WizzrobeTeleport(npc this, int teletype, DeathAnim deathtype, bool quitondeath)
+	{
+		int data = this->Misc[GH_INTERNAL];
+		bool colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_IN, true, deathtype, quitondeath);
+		colldet = this->CollDetection;
+		this->CollDetection = false;
+		for (int i = 0; i < TELEPORTTIME_WAIT; ++i)
+		{
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+			Ghost_Waitframe(this, deathtype, quitondeath);
+		}
+		int arr[WIZZTELE_LAST];
+		WizzrobeGetPos(this, arr, teletype);
+		this->X = arr[WIZZTELE_X];
+		this->Y = arr[WIZZTELE_Y];
+		this->Dir = arr[WIZZTELE_DIR];
+		this->CollDetection = colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_OUT, true, deathtype, quitondeath);
+	}
+	void WizzrobeTeleport(npc this, int teletype)
+	{
+		const int TELEPORTTIME_IN = 18;
+		const int TELEPORTTIME_OUT = 64;
+		const int TELEPORTTIME_WAIT = 74;
+		enum
+		{
+			WIZZTELE_X,
+			WIZZTELE_Y,
+			WIZZTELE_DIR,
+			WIZZTELE_LAST
+		};
+		int data = this->Misc[GH_INTERNAL];
+		bool colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_IN, true, GHD_NONE, true);
+		colldet = this->CollDetection;
+		this->CollDetection = false;
+		for (int i = 0; i < TELEPORTTIME_WAIT; ++i)
+		{
+			this->BFlags[WIZZROBE_INVISIBLE]  = true;
+			Ghost_Waitframe(this, GHD_NONE, true);
+		}
+		int arr[WIZZTELE_LAST];
+		WizzrobeGetPos(this, arr, teletype);
+		this->X = arr[WIZZTELE_X];
+		this->Y = arr[WIZZTELE_Y];
+		this->Dir = arr[WIZZTELE_DIR];
+		this->CollDetection = colldet;
+		WizzrobeTeleportAnim(this, TELEPORTTIME_OUT, true, GHD_NONE, true);
+	}
+	void WizzrobeGetPos(npc this, int arr, int type)
+	{
+		if (type == 1) WizzrobeFindPos1(this, arr);
+		else WizzrobeFindPos2(this, arr);
+	}
+	void WizzrobeFindPos1(npc this, int arr)
+	{
+		int t=0;
+		bool placed=false;
+		int x;
+		int y;
+		int dir;
+		
+		while(!placed && t<160)
+		{
+			if(IsDungeon())
 			{
-				//2.10 Windrobe
-				//randomise location and face Link
-			int t=0;
-			bool placed=false;
-					
-			while(!placed && t<160)
-			{
-				if(isdungeon())
-				{
-					x=((rand()%12)+2)*16;
-					y=((rand()%7)+2)*16;
-				}
-				else
-				{
-					x=((rand()%14)+1)*16;
-					y=((rand()%9)+1)*16;
-				}
-						
-				if(!m_walkflag(x,y,spw_door)&&((abs(x-Link.getX())>=32)||(abs(y-Link.getY())>=32)))
-				{
-					placed=true;
-				}
-						
-				++t;
-			}
-					
-			if(abs(x-Link.getX())<abs(y-Link.getY()))
-			{
-				if(y<Link.getY())
-				{
-					dir=down;
-				}
-				else
-				{
-					dir=up;
-				}
+				x=(Rand(12)+2)*16;
+				y=(Rand(7)+2)*16;
 			}
 			else
 			{
-				if(x<Link.getX())
-				{
-					dir=right;
-				}
-				else
-				{
-					dir=left;
-				}
+				x=(Rand(14)+1)*16;
+				y=(Rand(19)+1)*16;
 			}
-					
-			if(!placed)									   // can't place him, he's gone
-				return true;
-				
-				
-			//wizzrobe_attack(); //COmplaint about 2.10 Windrobes not behaving as they did in 2.10. Let's try it this way. -Z
-			//wizzrobe_attack_for_real(); //doing this makes them fire twice. The rest is correct.
+			
+			if((Abs(x-Hero->X) >= 32) || (Abs(y-Hero->Y) >= 32))
+			{
+				placed=true;
 			}
-			else place_on_axis(true, dmisc4!=0);
+			
+			++t;
+		}
+		
+		if(Abs(x - Hero->X) < Abs(y - Hero->Y))
+		{
+			if(y < Hero->Y)
+			{
+				dir = DIR_DOWN;
+			}
+			else
+			{
+				dir = DIR_UP;
+			}
+		}
+		else
+		{
+			if(x < Hero->X)
+			{
+				dir = DIR_RIGHT;
+			}
+			else
+			{
+				dir = DIR_LEFT;
+			}
+		}
+		arr[0] = x;
+		arr[1] = y;
+		arr[2] = dir;
+	}
+	// place the enemy in line with Link (red wizzrobes)
+	void WizzrobeFindPos2(npc this, int arr)
+	{
+		int lx=Clamp(GridX(Hero->X),32,208);
+		int ly=Clamp(GridY(Hero->Y),32,128);
+		int x;
+		int y;
+		int dir;
+		int pos2=Rand(23);
+		int tried=0;
+		bool last_resort = false , placed = false;
+		
+		do
+		{
+			if(pos2<14)
+			{
+				x=(pos2<<4)+16;
+				y=ly;
+			}
+			else
+			{
+				x=lx;
+				y=((pos2-14)<<4)+16;
+			}
+			
+			// Don't commit to a last resort if position is out of bounds.
+			last_resort= !(x<32 || y<32 || x>=224 || y>=144);
+			
+			if(Abs(lx-x)>16 || Abs(ly-y)>16)
+			{
+				// Red Wizzrobes should be able to appear on water, but not other
+				// solid combos; however, they could appear on solid combos in 2.10,
+				// and some quests depend on that.
+				if(CanPlaceTile(this, x, y, true))
+					placed=true;
+			}
+			
+			if(!placed && tried>=22 && last_resort)
+			{
+				placed=true;
+			}
+			
+			++tried;
+			pos2=(pos2+3)%23;
+		}
+		while(!placed);
+		
+		if(y==ly)
+			dir=(x<lx)?DIR_RIGHT:DIR_LEFT;
+		else
+			dir=(y<ly)?DIR_DOWN:DIR_UP;
+			
+		arr[0] = x;
+		arr[1] = y;
+		arr[2] = dir;
+	}
+	int MoveAtAngle(npc n, float angle, float dist, int clk, int speed, bool phase, int sfx);
+	int MoveAtAngle(eweapon e, float angle, float dist, int clk, int speed, bool phase, int sfx);
+	int MoveAtAngle(lweapon l, float angle, float dist, int clk, int speed,bool phase, int sfx);
+	
+	/*case 0:
+				if(!dmisc2)
+				{
+					// Wizzrobe Misc4 controls whether wizzrobes can teleport on top of solid combos,
+					// but should not appear on dungeon walls.	
+					if ( FFCore.getQuestHeaderInfo(vZelda) <= 0x190 ) place_on_axis(true, false); //1.84, and probably 1.90 wizzrobes should NEVER appear in dungeon walls.-Z (1.84 confirmed, 15th January, 2019 by Chris Miller).
+					else if ( (FFCore.getQuestHeaderInfo(vZelda) == 0x210 || FFCore.getQuestHeaderInfo(vZelda) == 0x192 ) && id == eWWIZ && FFCore.emulation[emu210WINDROBES] ) 
+					{
+							//2.10 Windrobe
+							//randomise location and face Link
+						int t=0;
+						bool placed=false;
+								
+						while(!placed && t<160)
+						{
+							if(isdungeon())
+							{
+								x=((rand()%12)+2)*16;
+								y=((rand()%7)+2)*16;
+							}
+							else
+							{
+								x=((rand()%14)+1)*16;
+								y=((rand()%9)+1)*16;
+							}
+									
+							if(!m_walkflag(x,y,spw_door)&&((abs(x-Link.getX())>=32)||(abs(y-Link.getY())>=32)))
+							{
+								placed=true;
+							}
+									
+							++t;
+						}
+								
+						if(abs(x-Link.getX())<abs(y-Link.getY()))
+						{
+							if(y<Link.getY())
+							{
+								dir=down;
+							}
+							else
+							{
+								dir=up;
+							}
+						}
+						else
+						{
+							if(x<Link.getX())
+							{
+								dir=right;
+							}
+							else
+							{
+								dir=left;
+							}
+						}
+								
+						unless(placed)									   // can't place him, he's gone
+							return true;
+						
+					}
+					else place_on_axis(true, dmisc4!=0);
 				}
 				else
 				{
@@ -916,42 +1214,6 @@ namespace ghost3
 				hxofs=0;
 				break;
 				
-			case 64:
-				fading=0;
-				charging=true;
-				break;
-				
-			case 73:
-				charging=false;
-				firing=40;
-				break;
-				
-			case 83:
-				wizzrobe_attack_for_real();
-				break;
-				
-			case 119:
-				firing=false;
-				charging=true;
-				break;
-				
-			case 128:
-				fading=fade_flicker;
-				charging=false;
-				break;
-				
-			case 146:
-				fading=fade_invisible;
-				hxofs=1000;
-				
-				//Fall through
-			default:
-				if(clk>=(146+zc_max(0,dmisc5)))
-					clk=-1;
-					
-				break;
-		}
-	}
 	*/
 }
 

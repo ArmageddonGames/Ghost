@@ -5,35 +5,30 @@ namespace ghost3
 {
 	
 	// EWeapon flags
-	enum
-	{
-		EWF_UNBLOCKABLE =               0.0001,  //0.0001 = 0000000000000001b
-		EWF_ROTATE =                    0.0002,  //0.0002 = 0000000000000010b
-		EWF_ROTATE_360 =                0.0004,  //0.0004 = 0000000000000100b
-		EWF_SHADOW =                    0.0008,  //0.0008 = 0000000000001000b
+	const long EWF_UNBLOCKABLE =            0000000000000001bL;  //0.0001 = 0000000000000001b
+	const long EWF_ROTATE =                 0000000000000010bL;  //0.0002 = 0000000000000010b
+	const long EWF_ROTATE_360 =             0000000000000100bL;  //0.0004 = 0000000000000100b
+	const long EWF_SHADOW =                 0000000000001000bL;  //0.0008 = 0000000000001000b
 		//4 bits
-		EWF_FLICKER =                   0.0016,  //0.0016 = 0000000000010000b
-		EWF_NO_COLLISION =              0.0032,  //0.0032 = 0000000000100000b
-		EWF_FAKE_Z =                    0.0064,  //0.0064 = 0000000001000000b
-		EWF_ALIVEOFFSCREEN =            0.0128,  //0.0128 = 0000000010000000b
+	const long EWF_FLICKER =                0000000000010000bL;  //0.0016 = 0000000000010000b
+	const long EWF_NO_COLLISION =           0000000000100000bL;  //0.0032 = 0000000000100000b
+	const long EWF_FAKE_Z =                 0000000001000000bL;  //0.0064 = 0000000001000000b
+	const long EWF_ALIVEOFFSCREEN =         0000000010000000bL;  //0.0128 = 0000000010000000b
 		//8 bits
-		EWF_PIERCING =                  0.0256,  //0.0256 = 0000000100000000b
-		EWF_RESERVED1 =                 0.0512,  //0.0512 = 0000001000000000b
-		EWF_RESERVED2 =                 0.1024,  //0.1024 = 0000010000000000b
-		EWF_RESERVED3 =                 0.2048,  //0.2048 = 0000100000000000b
+	const long EWF_PIERCING =               0000000100000000bL;  //0.0256 = 0000000100000000b
+	const long EWF_RESERVED1 =              0000001000000000bL;  //0.0512 = 0000001000000000b
+	const long EWF_RESERVED2 =              0000010000000000bL;  //0.1024 = 0000010000000000b
+	const long EWF_RESERVED3 =              0000100000000000bL;  //0.2048 = 0000100000000000b
 		//12 bits
-		EWF_RESERVED4 =                 0.4096,  //0.4096 = 0001000000000000b
-		EWF_RESERVED5 =                 0.8192,  //0.8192 = 0010000000000000b
-		EWF_RESERVED6 =                 1.6384,  //1.6384 = 0100000000000000b
-		EWF_RESERVED7 =                 3.2768   //3.2768 = 1000000000000000b //Anything past this is reserved for internal use only. See the next ENUM.
-	};
+	const long EWF_RESERVED4 =              0001000000000000bL;  //0.4096 = 0001000000000000b
+	const long EWF_RESERVED5 =              0010000000000000bL;  //0.8192 = 0010000000000000b
+	const long EWF_RESERVED6 =              0100000000000000bL;  //1.6384 = 0100000000000000b
+	const long EWF_RESERVED7 =              1000000000000000bL;  //3.2768 = 1000000000000000b
+	//Anything past this is reserved for internal use only. See the next few constants.
 
 	// Internal EWeapon flags
-	enum
-	{
-		EWFI_DEAD =                     6.5536,  //6.5536 = 010000000000000000b
-		EWFI_DEATH_EFFECT_DONE =       13.1072 //13.1072 = 100000000000000000b
-	};
+	const long EWFI_DEAD =                  00010000000000000000bL;  //6.5536 = 00010000000000000000b
+	const long EWFI_DEATH_EFFECT_DONE =     00100000000000000000bL; //13.1072 = 00100000000000000000b
 	
 	// Arguments to SetEWeaponMovement()
 	enum EW_MovementType
@@ -51,9 +46,7 @@ namespace ghost3
 		EWM_THROWCHASE,         //16
 		EWM_FALL =                19,
 		EWM_DRIFT,              //20
-		EWM_DRIFT_WAIT =          28,
-		EWM_HOMING_P2 =           30,
-		EWM_HOMING_REAIM_P2     //31
+		EWM_DRIFT_WAIT =          28
 	};
 
 	// Flags used by certain EWeapon movement types
@@ -286,16 +279,16 @@ namespace ghost3
 			if (Abs(args[GWI_DRAWXOFFSET]-this->DrawXOffset) >= 1) args[GWI_DRAWXOFFSET] = this->DrawXOffset;
 			if (Abs(args[GWI_DRAWYOFFSET]-this->DrawYOffset) >= 1) args[GWI_DRAWYOFFSET] = this->DrawYOffset;
 			// Is the weapon still active?
-			unless(get_bit(args[GWI_FLAGS], EWFI_DEAD))
+			unless(args[GWI_FLAGS] & EWFI_DEAD)
 			{
 				if (this->X < 0 || this->Y < 0 || this->X > 240 || this->Y > 160)
 				{
-					if (get_bit(args[GWI_FLAGS], EWF_ALIVEOFFSCREEN))
+					if (args[GWI_FLAGS] & EWF_ALIVEOFFSCREEN)
 					{
 						this->DeadState = WDS_ALIVE;
 					}
 				}
-				else if (get_bit(args[GWI_FLAGS], EWF_PIERCING)) this->DeadState = WDS_ALIVE;
+				else if (args[GWI_FLAGS] & EWF_PIERCING) this->DeadState = WDS_ALIVE;
 				DoEWeaponParticles(this, args);
 				// Start movement updates
 				if(args[GWI_MOVEMENT]!=0)
@@ -416,7 +409,7 @@ namespace ghost3
 			}
 
 			// Start death effects
-			else if(args[GWI_DEATHTYPE]!=0 && get_bit(args[GWI_FLAGS], EWFI_DEATH_EFFECT_DONE)==0)
+			else if(args[GWI_DEATHTYPE] && !(args[GWI_FLAGS] & EWFI_DEATH_EFFECT_DONE))
 			{
 				if(args[GWI_DEATHTYPE]<0)
 					DoEWeaponDeathPrototype(this, args);
@@ -487,7 +480,7 @@ namespace ghost3
 			
 			// Start flags
 			
-			if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
+			if(args[GWI_FLAGS] & EWF_ROTATE_360)
 			{
 				this->DrawXOffset=1000;
 				
@@ -496,8 +489,8 @@ namespace ghost3
 					return;
 				
 				// Flickering? Nothing to do here.
-				if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0 &&
-				   get_bit(Game->Time,10b/10000))
+				if((args[GWI_FLAGS] & EWF_FLICKER) &&
+				   (Game->Time & 10bL))
 					return;
 				
 				float endX;
@@ -570,20 +563,20 @@ namespace ghost3
 			}
 			else // EWF_ROTATE_360 isn't set
 			{
-				if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0)
+				if(args[GWI_FLAGS] & EWF_FLICKER)
 				{
 					// Weapons can't be made invisible; use DrawXOffset instead
-					if(get_bit(Game->Time,10b/10000))
+					if(Game->Time & 10bL)
 						this->DrawXOffset=1000;
 					else
 						this->DrawXOffset=0;
 				}
 				
-				if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+				if(args[GWI_FLAGS] & EWF_ROTATE)
 					SetEWeaponRotation(this);
 			}
 			
-			if(get_bit(args[GWI_FLAGS], EWF_FAKE_Z)!=0 || Game->Ghost[GHV_FAKE_EWEAPON_Z])
+			if((args[GWI_FLAGS] & EWF_FAKE_Z) || Game->Ghost[GHV_FAKE_EWEAPON_Z])
 			{
 				// For some reason, DrawZOffset is also HitZOffset,
 				// so Y offsets also have to be used.
@@ -681,9 +674,9 @@ namespace ghost3
 			{
 				args[GWI_MISC1]++;
 				// Spin in place while waiting
-				if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
+				if(args[GWI_FLAGS] & EWF_ROTATE_360)
 					this->Angle+=0.3;
-				else if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+				else if(args[GWI_FLAGS] & EWF_ROTATE)
 				{
 					this->Angle+=0.2;
 					// Pick the direction based on the timer
@@ -698,13 +691,13 @@ namespace ghost3
 					else
 						SetEWeaponRotation(this, DIR_LEFT);
 				}
-				if(args[GWI_MISC1]==0) // Start up again
+				unless(args[GWI_MISC1]) // Start up again
 				{
 					args[GWI_MISC1]=45;
 					this->Angle=RadianAngle(this->X, this->Y, Link->X, Link->Y);
 					this->Step=args[GWI_MISC2];
 					SetEWeaponDir(this);
-					if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+					if(args[GWI_FLAGS] & EWF_ROTATE)
 						SetEWeaponRotation(this);
 				}
 			}
@@ -714,7 +707,7 @@ namespace ghost3
 		{
 			this->Angle+=Randf(2*args[GWI_MOVEARG1])-args[GWI_MOVEARG1];
 			SetEWeaponDir(this);
-			if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+			if(args[GWI_FLAGS] & EWF_ROTATE)
 				SetEWeaponRotation(this);
 			
 			// Update the timer
@@ -757,13 +750,13 @@ namespace ghost3
 					this->Angle=Rand(62832)*0.0001;
 					this->Step=args[GWI_MISC2];
 					SetEWeaponDir(this);
-					if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+					if(args[GWI_FLAGS] & EWF_ROTATE)
 						SetEWeaponRotation(this);
 				}
 				// Spin in place while waiting
-				if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360)!=0)
+				if(args[GWI_FLAGS] & EWF_ROTATE_360)
 					this->Angle+=0.3;
-				else if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+				else if(args[GWI_FLAGS] & EWF_ROTATE)
 				{
 					// Pick the direction based on the timer
 					int dir=-args[GWI_MISC1]&110b;
@@ -1759,7 +1752,7 @@ namespace ghost3
 
 
 	// Fire an eweapon
-	eweapon FireEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, int flags)
+	eweapon FireEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, long flags)
 	{
 		if(sprite<0)
 			sprite=GetDefaultEWeaponSprite(weaponID);
@@ -1796,14 +1789,14 @@ namespace ghost3
 
 
 	// Fire an eweapon aimed based on Link's position
-	eweapon FireAimedEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, int flags)
+	eweapon FireAimedEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, long flags)
 	{
 		return FireEWeapon(weaponID, x, y, ArcTan(Link->X-x, Link->Y-y)+angle, step, damage, sprite, sound, flags);
 	}
 
 
 	// Fire a non-angular eweapon
-	eweapon FireNonAngularEWeapon(int weaponID, int x, int y, int dir, int step, int damage, int sprite, int sound, int flags)
+	eweapon FireNonAngularEWeapon(int weaponID, int x, int y, int dir, int step, int damage, int sprite, int sound, long flags)
 	{
 		if(sprite<0)
 			sprite=GetDefaultEWeaponSprite(weaponID);
@@ -1841,7 +1834,7 @@ namespace ghost3
 
 
 	// Fire an eweapon larger than 1x1
-	eweapon FireBigEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, int flags, int width, int height)
+	eweapon FireBigEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, long flags, int width, int height)
 	{
 		eweapon wpn=FireEWeapon(weaponID, x, y, angle, step, damage, sprite, sound, flags);
 		wpn->Extend=3;
@@ -1854,7 +1847,7 @@ namespace ghost3
 
 
 	// Fire an eweapon larger than 1x1 aimed based on Link's position
-	eweapon FireBigAimedEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, int flags, int width, int height)
+	eweapon FireBigAimedEWeapon(int weaponID, int x, int y, float angle, int step, int damage, int sprite, int sound, long flags, int width, int height)
 	{
 		eweapon wpn=FireEWeapon(weaponID, x, y, ArcTan(Link->X-x, Link->Y-y)+angle, step, damage, sprite, sound, flags);
 		wpn->Extend=3;
@@ -1867,7 +1860,7 @@ namespace ghost3
 
 
 	// Fire a non-angular eweapon larger than 1x1
-	eweapon FireBigNonAngularEWeapon(int weaponID, int x, int y, int dir, int step, int damage, int sprite, int sound, int flags, int width, int height)
+	eweapon FireBigNonAngularEWeapon(int weaponID, int x, int y, int dir, int step, int damage, int sprite, int sound, long flags, int width, int height)
 	{
 		eweapon wpn=FireNonAngularEWeapon(weaponID, x, y, dir, step, damage, sprite, sound, flags);
 		wpn->Extend=3;
@@ -1879,7 +1872,7 @@ namespace ghost3
 	}
 
 	// Create a dummy eweapon to use as a prototype
-	eweapon CreateDummyEWeapon(int weaponID, int step, int damage, int sprite, int sound, int flags)
+	eweapon CreateDummyEWeapon(int weaponID, int step, int damage, int sprite, int sound, long flags)
 	{
 		eweapon wpn=Screen->CreateEWeapon(weaponID);
 		eweapon checkWpn;
@@ -1905,7 +1898,7 @@ namespace ghost3
 
 
 	// Create a dummy eweapon larger than 1x1
-	eweapon CreateBigDummyEWeapon(int weaponID, int step, int damage, int sprite, int sound, int flags, int width, int height)
+	eweapon CreateBigDummyEWeapon(int weaponID, int step, int damage, int sprite, int sound, long flags, int width, int height)
 	{
 		eweapon wpn=CreateDummyEWeapon(weaponID, step, damage, sprite, sound, flags);
 		wpn->Extend=3;
@@ -2115,12 +2108,12 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		
-		if(get_bit(args[GWI_FLAGS], EWF_ROTATE_360))
+		if(args[GWI_FLAGS] & EWF_ROTATE_360)
 		{
 			wpn->DrawXOffset=1000;
 			
 			// Flickering? Nothing to do here.
-			if(get_bit(args[GWI_FLAGS], EWF_FLICKER) && get_bit(Game->Time,10b/10000))
+			if((args[GWI_FLAGS] & EWF_FLICKER) && (Game->Time & 10bL))
 				return;
 			
 			// This works a little differently than in UpdateEWeapon(). Since
@@ -2176,16 +2169,16 @@ namespace ghost3
 		}
 		else // EWF_ROTATE_360 isn't set
 		{
-			if(get_bit(args[GWI_FLAGS], EWF_FLICKER)!=0)
+			if(args[GWI_FLAGS] & EWF_FLICKER)
 			{
 				// Weapons can't be made invisible; use DrawXOffset instead
-				if(get_bit(Game->Time,10b/10000))
+				if(Game->Time & 10bL)
 					wpn->DrawXOffset=1000;
 				else
 					wpn->DrawXOffset=0;
 			}
 			
-			if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+			if(args[GWI_FLAGS] & EWF_ROTATE)
 				SetEWeaponRotation(wpn);
 		}
 	}
@@ -2220,7 +2213,7 @@ namespace ghost3
 		int args = wpn->Misc[GWM_SETTINGS];
 		unless(args) return;
 		
-		if(get_bit(args[GWI_FLAGS], EWF_UNBLOCKABLE)!=0)
+		if(args[GWI_FLAGS] & EWF_UNBLOCKABLE)
 			dir=UnblockableDir(dir);
 		
 		wpn->Dir=dir;
@@ -2457,10 +2450,10 @@ namespace ghost3
 		wpn->InitD[6]=args[GWI_DEATHARG];
 		wpn->InitD[7]=args[GWI_FLAGS];
 
-		if(get_bit(args[GWI_FLAGS], EWF_NO_COLLISION)!=0)
+		if(args[GWI_FLAGS] & EWF_NO_COLLISION)
 			wpn->CollDetection=false;
 
-		if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+		if(args[GWI_FLAGS] & EWF_ROTATE)
 			SetEWeaponRotation(wpn);
 	}
 	
@@ -2514,10 +2507,10 @@ namespace ghost3
 		wpn->InitD[6]=args[GWI_DEATHARG];
 		wpn->InitD[7]=args[GWI_FLAGS];
 
-		if(get_bit(args[GWI_FLAGS], EWF_NO_COLLISION)!=0)
+		if(args[GWI_FLAGS] & EWF_NO_COLLISION)
 			wpn->CollDetection=false;
 
-		if(get_bit(args[GWI_FLAGS], EWF_ROTATE)!=0)
+		if(args[GWI_FLAGS] & EWF_ROTATE)
 			SetEWeaponRotation(wpn);
 	}
 

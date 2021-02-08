@@ -173,6 +173,7 @@ namespace ghost3
 	// After waiting: Check whether the enemy was hit, stunned, or killed
 	bool Ghost_WaitframePart2(npc ghost, bool clearOnDeath, bool quitOnDeath)
 	{
+		ghost->BFlags[0] = false;
 		// Is it dead?
 		bool dead = isDead(ghost);
 		
