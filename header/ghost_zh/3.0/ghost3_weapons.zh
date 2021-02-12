@@ -231,7 +231,7 @@ namespace ghost3
 				else this->Misc[GWM_INITSTUFF] = 0;
 				Remove(data);
 			}
-			if (this->Angular == false)
+			unless (this->Angular)
 			{
 				this->Angle = DegtoRad(DirAngle(this->Dir));
 				this->Angular = true;
@@ -790,23 +790,23 @@ namespace ghost3
 				args[GWI_TRUEX]+=args[GWI_MISC1];
 			else if(dir==DIR_LEFTUP)
 			{
-				args[GWI_TRUEX]-=args[GWI_MISC1]*0.7071;
-				args[GWI_TRUEY]-=args[GWI_MISC1]*0.7071;
+				args[GWI_TRUEX]-=args[GWI_MISC1]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]-=args[GWI_MISC1]*DIAGONAL_MODIFIER;
 			}
 			else if(dir==DIR_RIGHTUP)
 			{
-				args[GWI_TRUEX]+=args[GWI_MISC1]*0.7071;
-				args[GWI_TRUEY]-=args[GWI_MISC1]*0.7071;
+				args[GWI_TRUEX]+=args[GWI_MISC1]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]-=args[GWI_MISC1]*DIAGONAL_MODIFIER;
 			}
 			else if(dir==DIR_LEFTDOWN)
 			{
-				args[GWI_TRUEX]-=args[GWI_MISC1]*0.7071;
-				args[GWI_TRUEY]+=args[GWI_MISC1]*0.7071;
+				args[GWI_TRUEX]-=args[GWI_MISC1]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]+=args[GWI_MISC1]*DIAGONAL_MODIFIER;
 			}
 			else // DIR_RIGHTDOWN
 			{
-				args[GWI_TRUEX]+=args[GWI_MISC1]*0.7071;
-				args[GWI_TRUEY]+=args[GWI_MISC1]*0.7071;
+				args[GWI_TRUEX]+=args[GWI_MISC1]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]+=args[GWI_MISC1]*DIAGONAL_MODIFIER;
 			}
 
 			this->X=args[GWI_TRUEX];
@@ -1297,23 +1297,23 @@ namespace ghost3
 				args[GWI_TRUEX]+=args[GWI_MOVEARG2];
 			else if(dir==DIR_LEFTUP)
 			{
-				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			else if(dir==DIR_RIGHTUP)
 			{
-				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			else if(dir==DIR_LEFTDOWN)
 			{
-				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			else // DIR_RIGHTDOWN
 			{
-				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			
 			this->X=args[GWI_TRUEX];
@@ -1346,23 +1346,23 @@ namespace ghost3
 				args[GWI_TRUEX]+=args[GWI_MOVEARG2];
 			else if(dir==DIR_LEFTUP)
 			{
-				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			else if(dir==DIR_RIGHTUP)
 			{
-				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			else if(dir==DIR_LEFTDOWN)
 			{
-				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]-=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			else // DIR_RIGHTDOWN
 			{
-				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*0.7071;
-				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*0.7071;
+				args[GWI_TRUEX]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
+				args[GWI_TRUEY]+=args[GWI_MOVEARG2]*DIAGONAL_MODIFIER;
 			}
 			
 			this->X=args[GWI_TRUEX];
@@ -1525,7 +1525,7 @@ namespace ghost3
 					e->HitYOffset  = this->HitYOffset;
 					e->HitWidth    = this->HitWidth;
 					e->HitHeight   = this->HitHeight;
-					e->Scale = this->Scale;
+					e->Scale       = this->Scale;
 				}
 			}
 			args[GWI_FLAGS] = set_bit(args[GWI_FLAGS],EWFI_DEATH_EFFECT_DONE);

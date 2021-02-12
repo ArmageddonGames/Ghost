@@ -35,6 +35,388 @@ namespace ghost3
 		
 		ghost3::SetHitOffsets(ghost, 0, 0, 0, 0);
 	}
+	
+	enum
+	{
+		GH_STA_1DIR,	//OTile, Frames, ASpeed
+		GH_STA_4DIR,
+		GH_STA_4DIAG,
+		GH_STA_8DIR,
+		GH_STA_HV,
+		GH_STA_2DIAG,
+		GH_STA_HVDIAG,
+		GH_STA_1COMBO,
+		GH_STA_4COMBO,
+		GH_STA_8COMBO
+	};
+	
+	void SetTileAnimation(npc ghost, int style, int arr, bool resetclk, bool noloop)
+	{
+		untyped data = ghost->Misc[GH_INTERNAL];
+		SetTileAnimation(ghost, style, arr);
+		if (resetclk) data[GHI_ACLK] = 0;
+		if (noloop) data[GHI_NOLOOP] = true;
+	}
+	
+	void SetTileAnimationAdvanced(npc ghost, int style, int arr, bool resetclk, bool noloop)
+	{
+		untyped data = ghost->Misc[GH_INTERNAL];
+		SetTileAnimationAdvanced(ghost, style, arr);
+		if (resetclk) data[GHI_ACLK] = 0;
+		if (noloop) data[GHI_NOLOOP] = true;
+	}
+	
+	void SetTileAnimation(npc ghost, int style, int arr)
+	{
+		untyped data = ghost->Misc[GH_INTERNAL];
+		data[GHI_NOLOOP] = false;
+		unless (IsValidArray(arr)) 
+		{
+			if (GHOST_DEBUG) TraceS("Invalid array passed to SetTileAnimation!\n");
+			return;
+		}
+		int size = MAX_INT;
+		switch(style)
+		{
+			case GH_STA_1COMBO:
+				size = 1;
+				break;
+				
+			case GH_STA_4COMBO:
+				size = 4;
+				break;
+				
+			case GH_STA_8COMBO:
+				size = 8;
+				break;
+				
+			case GH_STA_1DIR:
+				size = 3;
+				break;
+				
+			case GH_STA_HV:
+			case GH_STA_2DIAG:
+				size = 4;
+				break;
+				
+			case GH_STA_HVDIAG:
+				size = 5;
+				break;
+				
+			case GH_STA_4DIR:
+			case GH_STA_4DIAG:
+				size = 6;
+				break;
+				
+			case GH_STA_8DIR:
+				size = 10;
+				break;
+		}
+		if (SizeOfArray(arr) < size)
+		{
+			if (GHOST_DEBUG) TraceS("Array passed to SetTileAnimation is too small!\n");
+			return;
+		}
+		switch(style)
+		{
+			case GH_STA_1DIR:
+				data[GHI_OTILE_UP] = arr[0];
+				data[GHI_AFRAMES_UP] = arr[1];
+				data[GHI_ASPEED_UP] = arr[2];
+				data[GHI_ANIMSTYLE] = GHI_AS_1DIR;
+				break;
+				
+			case GH_STA_4DIR:
+				for (int i = DIR_UP; i <= DIR_RIGHT; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[i];
+					data[GHI_AFRAMES_UP+i] = arr[4];
+					data[GHI_ASPEED_UP+i] = arr[5];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIR;
+				break;
+				
+			case GH_STA_4DIAG:
+				for (int i = DIR_UP; i <= DIR_RIGHT; ++i)
+				{
+					data[GHI_OTILE_LEFTUP+i] = arr[i];
+					data[GHI_AFRAMES_LEFTUP+i] = arr[5];
+					data[GHI_ASPEED_LEFTUP+i] = arr[6];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIRDIAG;
+				break;
+				
+			case GH_STA_8DIR:
+				for (int i = DIR_UP; i <= DIR_RIGHTDOWN; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[i];
+					data[GHI_AFRAMES_UP+i] = arr[8];
+					data[GHI_ASPEED_UP+i] = arr[9];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_8DIR;
+				break;
+			
+			case GH_STA_HV:
+				for (int i = DIR_UP; i <= DIR_RIGHT; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[(i>>1)];
+					data[GHI_AFRAMES_UP+i] = arr[2];
+					data[GHI_ASPEED_UP+i] = arr[3];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIR;
+				break;
+			
+			case GH_STA_2DIAG:
+				for (int i = DIR_UP; i <= DIR_DOWN; ++i)
+				{
+					data[GHI_OTILE_LEFTUP+i] = arr[(i>>1)];
+					data[GHI_AFRAMES_LEFTUP+i] = arr[2];
+					data[GHI_ASPEED_LEFTUP+i] = arr[3];
+				}
+				data[GHI_OTILE_LEFTDOWN] = data[GHI_OTILE_RIGHTUP];
+				data[GHI_AFRAMES_LEFTDOWN] = data[GHI_AFRAMES_RIGHTUP];
+				data[GHI_ASPEED_LEFTDOWN] = data[GHI_ASPEED_RIGHTUP];
+				data[GHI_OTILE_RIGHTDOWN] = data[GHI_OTILE_LEFTUP];
+				data[GHI_AFRAMES_RIGHTDOWN] = data[GHI_AFRAMES_LEFTUP];
+				data[GHI_ASPEED_RIGHTDOWN] = data[GHI_ASPEED_LEFTUP];
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIRDIAG;
+				break;
+			
+			case GH_STA_HVDIAG:
+				for (int i = DIR_UP; i <= DIR_RIGHTUP; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[(i>>1)];
+					data[GHI_AFRAMES_UP+i] = arr[3];
+					data[GHI_ASPEED_UP+i] = arr[4];
+				}
+				data[GHI_OTILE_LEFTDOWN] = data[GHI_OTILE_RIGHTUP];
+				data[GHI_AFRAMES_LEFTDOWN] = data[GHI_AFRAMES_RIGHTUP];
+				data[GHI_ASPEED_LEFTDOWN] = data[GHI_ASPEED_RIGHTUP];
+				data[GHI_OTILE_RIGHTDOWN] = data[GHI_OTILE_LEFTUP];
+				data[GHI_AFRAMES_RIGHTDOWN] = data[GHI_AFRAMES_LEFTUP];
+				data[GHI_ASPEED_RIGHTDOWN] = data[GHI_ASPEED_LEFTUP];
+				data[GHI_ANIMSTYLE] = GHI_AS_8DIR;
+				break;
+				
+			case GH_STA_1COMBO:
+				combodata c = Game->LoadComboData(arr[0]);
+				data[GHI_OTILE_UP] = c->OriginalTile;
+				data[GHI_AFRAMES_UP] = c->Frames;
+				data[GHI_ASPEED_UP] = c->ASpeed;
+				data[GHI_CDATA_UP] = c;
+				ghost->TileWidth = c->SkipAnim+1;
+				ghost->TileHeight = c->SkipAnimY+1;
+				data[GHI_ANIMSTYLE] = GHI_AS_1COMBO;
+				break;
+			
+			case GH_STA_4COMBO:
+				for (int i = 0; i < 4; ++i)
+				{
+					combodata c = Game->LoadComboData(arr[i]);
+					data[GHI_OTILE_UP+i] = c->OriginalTile;
+					data[GHI_AFRAMES_UP+i] = c->Frames;
+					data[GHI_ASPEED_UP+i] = c->ASpeed;
+					data[GHI_CDATA_UP+i] = c;
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4COMBO;
+				break;
+				
+			case GH_STA_8COMBO:
+				for (int i = 0; i < 8; ++i)
+				{
+					combodata c = Game->LoadComboData(arr[i]);
+					data[GHI_OTILE_UP+i] = c->OriginalTile;
+					data[GHI_AFRAMES_UP+i] = c->Frames;
+					data[GHI_ASPEED_UP+i] = c->ASpeed;
+					data[GHI_CDATA_UP+i] = c;
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_8COMBO;
+				break;
+				
+			default:
+				break;
+		};
+	}
+	
+	void SetTileAnimationAdvanced(npc ghost, int style, int arr)
+	{
+		untyped data = ghost->Misc[GH_INTERNAL];
+		data[GHI_NOLOOP] = false;
+		unless (IsValidArray(arr)) 
+		{
+			if (GHOST_DEBUG) TraceS("Invalid array passed to SetTileAnimation!\n");
+			return;
+		}
+		int size = MAX_INT;
+		switch(style)
+		{
+			case GH_STA_1COMBO:
+				size = 1;
+				break;
+				
+			case GH_STA_4COMBO:
+				size = 4;
+				break;
+				
+			case GH_STA_8COMBO:
+				size = 8;
+				break;
+				
+			case GH_STA_1DIR:
+				size = 3;
+				break;
+				
+			case GH_STA_HV:
+			case GH_STA_2DIAG:
+				size = 6;
+				break;
+				
+			case GH_STA_HVDIAG:
+				size = 9;
+				break;
+				
+			case GH_STA_4DIR:
+			case GH_STA_4DIAG:
+				size = 12;
+				break;
+				
+			case GH_STA_8DIR:
+				size = 24;
+				break;
+		}
+		if (SizeOfArray(arr) < size)
+		{
+			if (GHOST_DEBUG) TraceS("Array passed to SetTileAnimation is too small!\n");
+			return;
+		}
+		switch(style)
+		{
+			case GH_STA_1DIR:
+				data[GHI_OTILE_UP] = arr[0];
+				data[GHI_AFRAMES_UP] = arr[1];
+				data[GHI_ASPEED_UP] = arr[2];
+				data[GHI_ANIMSTYLE] = GHI_AS_1DIR;
+				break;
+				
+			case GH_STA_4DIR:
+				for (int i = DIR_UP; i <= DIR_RIGHT; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[i];
+					data[GHI_AFRAMES_UP+i] = arr[4+i];
+					data[GHI_ASPEED_UP+i] = arr[8+i];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIR;
+				break;
+				
+			case GH_STA_4DIAG:
+				for (int i = DIR_UP; i <= DIR_RIGHT; ++i)
+				{
+					data[GHI_OTILE_LEFTUP+i] = arr[i];
+					data[GHI_AFRAMES_LEFTUP+i] = arr[4+i];
+					data[GHI_ASPEED_LEFTUP+i] = arr[8+i];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIRDIAG;
+				break;
+				
+			case GH_STA_8DIR:
+				for (int i = DIR_UP; i <= DIR_RIGHTDOWN; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[i];
+					data[GHI_AFRAMES_UP+i] = arr[8+i];
+					data[GHI_ASPEED_UP+i] = arr[16+i];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_8DIR;
+				break;
+			
+			case GH_STA_HV:
+				for (int i = DIR_UP; i <= DIR_RIGHT; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[(i>>1)];
+					data[GHI_AFRAMES_UP+i] = arr[2+(i>>1)];
+					data[GHI_ASPEED_UP+i] = arr[4+(i>>1)];
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIR;
+				break;
+			
+			case GH_STA_2DIAG:
+				for (int i = DIR_UP; i <= DIR_DOWN; ++i)
+				{
+					data[GHI_OTILE_LEFTUP+i] = arr[(i>>1)];
+					data[GHI_AFRAMES_LEFTUP+i] = arr[2+(i>>1)];
+					data[GHI_ASPEED_LEFTUP+i] = arr[4+(i>>1)];
+				}
+				data[GHI_OTILE_LEFTDOWN] = data[GHI_OTILE_RIGHTUP];
+				data[GHI_AFRAMES_LEFTDOWN] = data[GHI_AFRAMES_RIGHTUP];
+				data[GHI_ASPEED_LEFTDOWN] = data[GHI_ASPEED_RIGHTUP];
+				data[GHI_OTILE_RIGHTDOWN] = data[GHI_OTILE_LEFTUP];
+				data[GHI_AFRAMES_RIGHTDOWN] = data[GHI_AFRAMES_LEFTUP];
+				data[GHI_ASPEED_RIGHTDOWN] = data[GHI_ASPEED_LEFTUP];
+				data[GHI_ANIMSTYLE] = GHI_AS_4DIRDIAG;
+				break;
+			
+			case GH_STA_HVDIAG:
+				for (int i = DIR_UP; i <= DIR_RIGHTUP; ++i)
+				{
+					data[GHI_OTILE_UP+i] = arr[(i>>1)];
+					data[GHI_AFRAMES_UP+i] = arr[3+(i>>1)];
+					data[GHI_ASPEED_UP+i] = arr[6+(i>>1)];
+				}
+				data[GHI_OTILE_LEFTDOWN] = data[GHI_OTILE_RIGHTUP];
+				data[GHI_AFRAMES_LEFTDOWN] = data[GHI_AFRAMES_RIGHTUP];
+				data[GHI_ASPEED_LEFTDOWN] = data[GHI_ASPEED_RIGHTUP];
+				data[GHI_OTILE_RIGHTDOWN] = data[GHI_OTILE_LEFTUP];
+				data[GHI_AFRAMES_RIGHTDOWN] = data[GHI_AFRAMES_LEFTUP];
+				data[GHI_ASPEED_RIGHTDOWN] = data[GHI_ASPEED_LEFTUP];
+				data[GHI_ANIMSTYLE] = GHI_AS_8DIR;
+				break;
+			
+			case GH_STA_1COMBO:
+				combodata c = Game->LoadComboData(arr[0]);
+				data[GHI_OTILE_UP] = c->OriginalTile;
+				data[GHI_AFRAMES_UP] = c->Frames;
+				data[GHI_ASPEED_UP] = c->ASpeed;
+				data[GHI_CDATA_UP] = c;
+				ghost->TileWidth = c->SkipAnim+1;
+				ghost->TileHeight = c->SkipAnimY+1;
+				data[GHI_ANIMSTYLE] = GHI_AS_1COMBO;
+				break;
+			
+			case GH_STA_4COMBO:
+				for (int i = 0; i < 4; ++i)
+				{
+					combodata c = Game->LoadComboData(arr[i]);
+					data[GHI_OTILE_UP+i] = c->OriginalTile;
+					data[GHI_AFRAMES_UP+i] = c->Frames;
+					data[GHI_ASPEED_UP+i] = c->ASpeed;
+					data[GHI_CDATA_UP+i] = c;
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_4COMBO;
+				break;
+				
+			case GH_STA_8COMBO:
+				for (int i = 0; i < 8; ++i)
+				{
+					combodata c = Game->LoadComboData(arr[i]);
+					data[GHI_OTILE_UP+i] = c->OriginalTile;
+					data[GHI_AFRAMES_UP+i] = c->Frames;
+					data[GHI_ASPEED_UP+i] = c->ASpeed;
+					data[GHI_CDATA_UP+i] = c;
+				}
+				data[GHI_ANIMSTYLE] = GHI_AS_8COMBO;
+				break;
+				
+			default:
+				break;
+		};
+	}
+	
+	void SetTrail(npc ghost, int frequency, int lifespan, int flags)
+	{
+		int data = ghost->Misc[GH_INTERNAL];
+		data[GHI_TRAIL_FREQ] = frequency;
+		data[GHI_TRAIL_LIFESPAN] = lifespan;
+		data[GHI_TRAIL_FLAGS] = flags;
+	}
 
 
 	void SetSize(npc ghost, int tileWidth, int tileHeight)

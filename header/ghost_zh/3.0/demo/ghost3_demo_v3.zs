@@ -28,7 +28,7 @@ namespace ghost3 //Ghost is now in a namespace. You now have three options when 
 		//Either upgrade 2.8 to 2.9 (if it's released), or don't mix n match if you want to use this method.
 		void run()
 		{
-			int data[DATA_SIZE]; //Always first
+			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			
 			eweapon fakeparticle = CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 32, 0, EWF_NO_COLLISION);
@@ -94,7 +94,7 @@ npc script G3_Example2
 	//Personally I think it's dumb. You should do either the method shown above or the method mentioned above
 	void run()
 	{
-		int data[ghost3::DATA_SIZE]; //Always first
+		untyped data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		eweapon fakeparticle = ghost3::CreateDummyEWeapon(EW_SCRIPT1, 0, 0, 97, 0, ghost3::EWF_NO_COLLISION);
@@ -128,7 +128,7 @@ namespace ghost3
 		//using namespace ghost3;
 		void run()
 		{
-			int data[DATA_SIZE]; //Always first
+			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			
 			eweapon fakeparticle = CreateDummyEWeapon(EW_SCRIPT1, 0, this->WeaponDamage, 87, 0, 0);
@@ -157,7 +157,7 @@ namespace ghost3
 		//using namespace ghost3;
 		void run()
 		{
-			int data[DATA_SIZE]; //Always first
+			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			
 			int shotcounter;
@@ -182,7 +182,7 @@ npc script G3_Example5
 	//Another script that uses the tedious method. *sigh*
 	void run()
 	{
-		int data[ghost3::DATA_SIZE]; //Always first
+		untyped data[ghost3::DATA_SIZE]; //Always first
 		ghost3::init(this, data); //Always second
 		
 		int shotcounter;
@@ -213,7 +213,7 @@ namespace ghost3
 		//using namespace ghost3;
 		void run()
 		{
-			int data[DATA_SIZE]; //Always first
+			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			while(true)
 			{
@@ -246,7 +246,7 @@ namespace ghost3
 		void run()
 		{
 			RemoveSpawnPoof(this);
-			int data[DATA_SIZE]; //Always first
+			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			WizzrobeTeleport(this, 0, 0, 64, 24, false, GHD_NONE, true);
 			while(true)
@@ -263,7 +263,7 @@ namespace ghost3
 		//using namespace ghost3;
 		void run()
 		{
-			int data[DATA_SIZE]; //Always first
+			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			int segx[201];
 			int segy[201];
@@ -271,7 +271,6 @@ namespace ghost3
 			memset(segy, this->Y, 201);
 			this->DrawXOffset = -1000;
 			SetFlag(this, GHF_SET_DIRECTION);
-			SetFlag(this, GHF_8WAY);
 			int i; int hitclk; int cset = this->CSet;
 			eweapon e; int sinclk;
 			while(true)
@@ -309,6 +308,67 @@ namespace ghost3
 				SetEWeaponDeathEffect(e, EWD_VANISH, -1);
 				Screen->DrawCombo(2, segx[i], segy[i], this->InitD[0]+2, 1, 1, this->CSet, -1, -1, segx[i], segy[i], Angle(segx[i], segy[i], segx[i-10], segy[i-10]), -1, 0, true, OP_OPAQUE);
 				Ghost_Waitframe(this, GHD_NONE, true);
+			}
+		}
+	}
+	
+	npc script G3_Example9
+	{
+		//using namespace ghost3;
+		void run()
+		{
+			untyped data[DATA_SIZE]; //Always first
+			init(this, data); //Always second
+			SetFlag(this, GHF_SET_DIRECTION);
+			SetFlag(this, GHF_8WAY);
+			SetTileAnimation(this, GH_STA_4DIR, {39008, 39180, 39040, 39048, 0, 4});
+			SetTrail(this, 2, 16, 3);
+			eweapon e;
+			while(true)
+			{
+				SetTileAnimation(this, GH_STA_4DIR, {39008, 39000, 39040, 39048, 0, 4});
+				this->Dir = AngleDir4(CenterX(this), CenterY(this), Hero->X+8, Hero->Y+8);
+				TeleportAtAngle(this, Angle(CenterX(this), CenterY(this), Hero->X+8, Hero->Y+8), 96, 4, true, true, false, 32);
+				for (int i = 0; i < 20; ++i)
+				{
+					Ghost_Waitframe(this, GHD_NONE, true);
+				}
+				SetTileAnimation(this, GH_STA_4DIR, {39008, 39000, 39040, 39048, 4, 4}, true, true);
+				for (int i = 0; i < 12; ++i)
+				{
+					this->Dir = AngleDir4(CenterX(this), CenterY(this), Hero->X+8, Hero->Y+8);
+					Ghost_Waitframe(this, GHD_NONE, true);
+				}
+				for (int q = -0.8; q <= 0.8; q+=0.8)
+				{
+					switch(this->Dir)
+					{
+						case DIR_RIGHT:
+							e = FireAimedEWeapon(EW_FIREBALL, this->X+20, this->Y+12, q, 200, this->WeaponDamage, -1, -1, 0);
+							break;
+						case DIR_LEFT:
+							e = FireAimedEWeapon(EW_FIREBALL, this->X-4, this->Y+12, q, 200, this->WeaponDamage, -1, -1, 0);
+							break;
+						case DIR_DOWN:
+							e = FireAimedEWeapon(EW_FIREBALL, this->X+8, this->Y+12, q, 200, this->WeaponDamage, -1, -1, 0);
+							break;
+						default:
+							e = FireAimedEWeapon(EW_FIREBALL, this->X+8, this->Y, q, 200, this->WeaponDamage, -1, -1, 0);
+							break;
+					}
+					SetEWeaponLifespan(e, EWL_TIMER, 30);
+					SetEWeaponDeathEffect(e, EWD_AIM_AT_LINK, 44);
+					for (int i = 0; i < 8; ++i)
+					{
+						Ghost_Waitframe(this, GHD_NONE, true);
+					}
+				}
+				SetTileAnimation(this, GH_STA_4DIR, {39008, 39000, 39040, 39048, 0, 4});
+				for (int i = 0; i < 50; ++i)
+				{
+					Ghost_Waitframe(this, GHD_NONE, true);
+				}
+				
 			}
 		}
 	}

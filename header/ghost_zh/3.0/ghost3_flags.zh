@@ -31,6 +31,7 @@ namespace ghost3
 	const int GHF_WATER_ONLY         = 0x10002;
 	const int GHF_DEEP_WATER_ONLY    = 0x10003;
 	const int GHF_STATIC_SHADOW      = 0x10004;
+	const int GHF_DIAGWAY            = 0x10005;
 
 	// Internal enemy flags
 	const int GHFI_GOT_HIT                          = 000001b;

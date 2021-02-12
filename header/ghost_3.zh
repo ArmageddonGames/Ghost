@@ -57,10 +57,50 @@ namespace ghost3
 		GHI_PREVX,	//Positional updates
 		GHI_PREVY,
 		GHI_DIR,
-		STOREDRAWX,
-		FLICKERCLK,
+		GHI_DIAGVX,
+		GHI_DIAGVY,
+		GHI_ANIMSTYLE,
+		GHI_OTILE_UP,
+		GHI_OTILE_DOWN,
+		GHI_OTILE_LEFT,
+		GHI_OTILE_RIGHT,
+		GHI_OTILE_LEFTUP,
+		GHI_OTILE_RIGHTUP,
+		GHI_OTILE_LEFTDOWN,
+		GHI_OTILE_RIGHTDOWN,
+		GHI_AFRAMES_UP,
+		GHI_AFRAMES_DOWN,
+		GHI_AFRAMES_LEFT,
+		GHI_AFRAMES_RIGHT,
+		GHI_AFRAMES_LEFTUP,
+		GHI_AFRAMES_RIGHTUP,
+		GHI_AFRAMES_LEFTDOWN,
+		GHI_AFRAMES_RIGHTDOWN,
+		GHI_ASPEED_UP,
+		GHI_ASPEED_DOWN,
+		GHI_ASPEED_LEFT,
+		GHI_ASPEED_RIGHT,
+		GHI_ASPEED_LEFTUP,
+		GHI_ASPEED_RIGHTUP,
+		GHI_ASPEED_LEFTDOWN,
+		GHI_ASPEED_RIGHTDOWN,
+		GHI_CDATA_UP,
+		GHI_CDATA_DOWN,
+		GHI_CDATA_LEFT,
+		GHI_CDATA_RIGHT,
+		GHI_CDATA_LEFTUP,
+		GHI_CDATA_RIGHTUP,
+		GHI_CDATA_LEFTDOWN,
+		GHI_CDATA_RIGHTDOWN,
+		GHI_ACLK,
+		GHI_NOLOOP,
+		GHI_TRAIL_CLK,
+		GHI_TRAIL_FREQ,
+		GHI_TRAIL_LIFESPAN,
+		GHI_TRAIL_FLAGS,
 		D0, D1, D2, D3,	//Generic data registers
 		D4, D5, D6, D7,
+		FLICKERCLK,
 		CLK0, CLK1,	// Clocks
 		CLK2, CLK3,
 		DATA_SIZE
@@ -78,6 +118,8 @@ namespace ghost3
 	};
 	
 	// Game->Ghost[] Values
+	
+	CONFIGB GHOST_DEBUG = true;
 	
 	enum GhostArrayValues
 	{
@@ -141,7 +183,7 @@ namespace ghost3
 		
 	};
 	
-	// Call at the start of every script immediately following the data[] array declaration.
+	// Call at the begin of every script immediately following the data[] array declaration.
 	void init(npc ghost, untyped ptr)
 	{
 		if (sysinit())
@@ -358,6 +400,7 @@ namespace ghost3
 #include "ghost_zh/3.0/ghost3_other.zh"
 #include "ghost_zh/3.0/ghost3_update.zh"
 #include "ghost_zh/3.0/ghost3_shell.zh"
+#include "ghost_zh/3.0/ghost3_extraweapons.zh"
 //#include "ghost_zh/3.0/ghost3_global.zh"
 
 

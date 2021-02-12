@@ -3,6 +3,7 @@
 
 namespace ghost3
 {
+	const int DIAGONAL_MODIFIER = 0.7071;
 	void MoveXY(npc ghost, float xStep, float yStep, int imprecision)
 	{
 		// If this is sideview, most enemies can't move upward
@@ -111,34 +112,6 @@ namespace ghost3
 			
 			ghost->Y=edge-edgeDiff;
 		}
-		if(FlagIsSet(ghost, GHF_SET_DIRECTION) && (ghost->Misc[GH_INTERNAL][GHI_IFLAGS]&GHFI_DIR_FORCED)==0)
-		{
-			// Use 8 directions if 8-way flag is set
-			if(FlagIsSet(ghost, GHF_8WAY))
-				ghost->Dir=AngleDir8(WrapAngle(ArcTan(xStep, yStep)) * RADIAN);
-			
-			// Otherwise, 4 directions
-			else
-			{
-				if(Abs(xStep)<Abs(yStep))
-				{
-					if(yStep<0)
-						ghost->Dir=DIR_UP;
-					else
-						ghost->Dir=DIR_DOWN;
-				}
-				else
-				{
-					if(xStep<0)
-						ghost->Dir=DIR_LEFT;
-					else
-						ghost->Dir=DIR_RIGHT;
-				}
-			}
-			
-			ghost3::SetInternal(ghost, GHI_PREVX, ghost->X);
-			ghost3::SetInternal(ghost, GHI_PREVY, ghost->Y);
-		}
 	}
 
 	void Move(npc ghost, int dir, float step, int imprecision)
@@ -161,20 +134,20 @@ namespace ghost3
 				xStep=step;
 				break;
 			case DIR_LEFTUP:
-				xStep=-step*0.7071;
-				yStep=-step*0.7071;
+				xStep=-step*DIAGONAL_MODIFIER;
+				yStep=-step*DIAGONAL_MODIFIER;
 				break;
 			case DIR_RIGHTUP:
-				xStep=step*0.7071;
-				yStep=-step*0.7071;
+				xStep=step*DIAGONAL_MODIFIER;
+				yStep=-step*DIAGONAL_MODIFIER;
 				break;
 			case DIR_LEFTDOWN:
-				xStep=-step*0.7071;
-				yStep=step*0.7071;
+				xStep=-step*DIAGONAL_MODIFIER;
+				yStep=step*DIAGONAL_MODIFIER;
 				break;
 			case DIR_RIGHTDOWN:
-				xStep=step*0.7071;
-				yStep=step*0.7071;
+				xStep=step*DIAGONAL_MODIFIER;
+				yStep=step*DIAGONAL_MODIFIER;
 				break;
 			default:
 				printf("Invalid dir (%d) passed to ghost3::Move()\n", dir);
@@ -201,7 +174,7 @@ namespace ghost3
 			return true;
 		
 		if(dir>=4) // Diagonal
-			step*=0.7071;
+			step*=DIAGONAL_MODIFIER;
 		
 		dir=NormalizeDir(dir);
 		
@@ -864,6 +837,10 @@ namespace ghost3
 		else this->BFlags[WIZZROBE_INVISIBLE]  = false;
 		++data[FLICKERCLK];
 	}
+	void WizzrobeFlickerClear(npc this)
+	{
+		this->BFlags[WIZZROBE_INVISIBLE] = false;
+	}
 	void WizzrobeTeleport(npc this, int teletype, int outframes, int inframes, int waittime, bool collflicker, DeathAnim deathtype, bool quitondeath)
 	{
 		int data = this->Misc[GH_INTERNAL];
@@ -1090,130 +1067,60 @@ namespace ghost3
 		arr[1] = y;
 		arr[2] = dir;
 	}
-	int MoveAtAngle(npc n, float angle, float dist, int clk, int speed, bool phase, int sfx);
-	int MoveAtAngle(eweapon e, float angle, float dist, int clk, int speed, bool phase, int sfx);
-	int MoveAtAngle(lweapon l, float angle, float dist, int clk, int speed,bool phase, int sfx);
-	
-	/*case 0:
-				if(!dmisc2)
+	void TeleportAtAngle(npc this, float angle, float dist, int speed, bool phase, bool setdirection, bool ignoresolid, int sfx)
+	{
+		Audio->PlaySound(sfx);
+		TeleportAtAngle(this, angle, dist, speed, phase, setdirection, ignoresolid);
+	}
+	void TeleportAtAngle(npc this, float angle, float dist, int speed, bool phase, bool ignoresetdirection, bool ignoresolid)
+	{
+		int data = this->Misc[GH_INTERNAL];
+		int totalframes = Floor(dist / speed)+1;
+		int finalx = this->X + VectorX(dist, angle);
+		int finaly = this->Y + VectorY(dist, angle);
+		bool colldet = this->CollDetection;
+		int dir = this->Dir;
+		for (int i = totalframes; i > 0; --i)
+		{
+			unless (i == 1)
+			{
+				if (ignoresolid) ForceMoveAtAngle(this, angle, speed);
+				else MoveAtAngle(this, angle, speed, 2);
+				if (ignoresetdirection)
 				{
-					// Wizzrobe Misc4 controls whether wizzrobes can teleport on top of solid combos,
-					// but should not appear on dungeon walls.	
-					if ( FFCore.getQuestHeaderInfo(vZelda) <= 0x190 ) place_on_axis(true, false); //1.84, and probably 1.90 wizzrobes should NEVER appear in dungeon walls.-Z (1.84 confirmed, 15th January, 2019 by Chris Miller).
-					else if ( (FFCore.getQuestHeaderInfo(vZelda) == 0x210 || FFCore.getQuestHeaderInfo(vZelda) == 0x192 ) && id == eWWIZ && FFCore.emulation[emu210WINDROBES] ) 
-					{
-							//2.10 Windrobe
-							//randomise location and face Link
-						int t=0;
-						bool placed=false;
-								
-						while(!placed && t<160)
-						{
-							if(isdungeon())
-							{
-								x=((rand()%12)+2)*16;
-								y=((rand()%7)+2)*16;
-							}
-							else
-							{
-								x=((rand()%14)+1)*16;
-								y=((rand()%9)+1)*16;
-							}
-									
-							if(!m_walkflag(x,y,spw_door)&&((abs(x-Link.getX())>=32)||(abs(y-Link.getY())>=32)))
-							{
-								placed=true;
-							}
-									
-							++t;
-						}
-								
-						if(abs(x-Link.getX())<abs(y-Link.getY()))
-						{
-							if(y<Link.getY())
-							{
-								dir=down;
-							}
-							else
-							{
-								dir=up;
-							}
-						}
-						else
-						{
-							if(x<Link.getX())
-							{
-								dir=right;
-							}
-							else
-							{
-								dir=left;
-							}
-						}
-								
-						unless(placed)									   // can't place him, he's gone
-							return true;
-						
-					}
-					else place_on_axis(true, dmisc4!=0);
+					data[GHI_IFLAGS]|=GHFI_DIR_FORCED;
+					data[GHI_DIR] = dir;
 				}
-				else
+				if (this->X < 0 || this->X >= (256-(this->TileWidth*16)) ||
+				this->Y < 0 || this->Y >= (176-(this->TileHeight*16))) 
 				{
-					int t=0;
-					bool placed=false;
-					
-					while(!placed && t<160)
-					{
-						if(isdungeon())
-						{
-							x=((rand()%12)+2)*16;
-							y=((rand()%7)+2)*16;
-						}
-						else
-						{
-							x=((rand()%14)+1)*16;
-							y=((rand()%9)+1)*16;
-						}
-						
-						if(!m_walkflag(x,y,spw_door)&&((abs(x-Link.getX())>=32)||(abs(y-Link.getY())>=32)))
-						{
-							placed=true;
-						}
-						
-						++t;
-					}
-					
-					if(abs(x-Link.getX())<abs(y-Link.getY()))
-					{
-						if(y<Link.getY())
-						{
-							dir=down;
-						}
-						else
-						{
-							dir=up;
-						}
-					}
-					else
-					{
-						if(x<Link.getX())
-						{
-							dir=right;
-						}
-						else
-						{
-							dir=left;
-						}
-					}
-					
-					if(!placed)									   // can't place him, he's gone
-						return true;
+					this->X = Clamp(this->X, 0, 256-(this->TileWidth*16));
+					this->Y = Clamp(this->Y, 0, 176-(this->TileHeight*16));
+					break;
 				}
-				
-				fading=fade_flicker;
-				hxofs=0;
-				break;
-				
-	*/
+				if (phase) 
+				{
+					WizzrobeFlicker(this);
+					this->CollDetection = false;
+				}
+			}
+			else if (ignoresolid)
+			{
+				this->X = finalx;
+				this->Y = finaly;
+			}
+			Ghost_Waitframe(this, GHD_NONE, true);
+		}
+		if (phase) 
+		{
+			this->CollDetection = colldet;
+			WizzrobeFlickerClear(this);
+		}
+	}
+	void ForceMoveAtAngle(npc this, int angle, int step)
+	{
+		this->X += VectorX(step, angle);
+		this->Y += VectorY(step, angle);
+	}
 }
 
