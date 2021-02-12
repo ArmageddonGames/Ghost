@@ -2,24 +2,116 @@
 // Version 3.0.0 - Change History
 
 Alpha 8
-
+Updated meta file, removed outdated duplicate files.
+Updated demo to Alpha 8
+Added TeleportAtAngle.
+Added ExtraWeapons; currently only has lasers.
+Added SetTileAnimation and SetTileAnimationAdvanced.
+Added GH_DIAGWAY.
+	( arcerusplayer11, 12th February, 2021 )
 
 Alpha 7
-
+Added Wizzrobe Teleport behavior.
+Updated flags to long.
+	( arcerusplayer11, 8th February, 2021 )
 
 Alpha 6
-
+Minor type fix.
+Updated meta time
+Added timezone to meta file.
+A 'What was I thinking?!' update to Metadata.print().
+Fixed typo in ghost3::Metadata.print()
+dded Metadata struct, and we print Metadata one time on init based
+	on a flag in the GHOST combo.
+Added a ghost3.zcombo file to the package, with normal settings enabled.
+Added file daira.zs, fixing the bugs in the Daira NPC used by classic.zh.
+Moved demo scripts that had KW 'using' into ghost3 namespace due to numerous
+	erros: See 'header/ghost_zh/3.0/demo/demo-errors-with-using-kw.txt'.
+Corrected default behaviour of GNV_FAKE_EWEAPON_Z flag.
+Rebuilt quest file with all current files in latest 2.55A89P,
+	and tested it: All seems good, new demo is at:
+	'/header/ghost_zh/3.0/demo/ghost_zh_demo_3.0-Alpha-6.qst'
+	Let's figure out why I am having these build errors if scripts have the
+	'using' keyword...
+	( ZoriaRPG, 7th February, 2021 )
+	
+Fixed flags, added Wizzrobe movement.
+	( arcerusplayer11, 7th February, 2021 )
 
 Alpha 5
-
-
+Fixed Zoria's mess.
+Fixed a misunderstanding.
+Fixed bug with scaling
+	( arcerusplayer11, 6th February, 2021 )
+	
+Add recompiled demo for Alpha 5 made in 2.55A89P
+Re-organised the main header file, for readability.
+Move generic enum for data[] flags into enum DataRegisters.
+Added enum for data array registers, and sized arrays to [DATA_SIZE]
+Minor optimisation.
+Fix typos/compilation.
+Added standalone debugging shell code.
+	( ZoriaRPG, 5th February, 2021 )
+Refactor all files and demo; add demo path under 3.0 path.	
+	( ZoriaRPG, 4th February, 2021 )
+	
 Alpha 4
-
-
+Added Dataweapons; weapons that store data.
+	Weapons should no longer use an excessive amount of Misc variables because of this.
+	GetEWeaponAttribute and SetEWeaponAttribute have been added; use these to access internal variables.
+	Added Grow and Shrink lifespans; weapons will scale up or down over time.
+	( arcerusplayer11, 4th February, 2021 )
+	
 Alpha 3
-
+Fixed improper merge.
+Merge remote-tracking branch 'ghostv3/3.0.0-Alpha-3' into 3.0.0-Alpha-3 
+Added WallBounce weapon movement.
+	( arcerusplayer11, 4th February, 2021 )
+	
+Fix mixup with GetCombo not returning combodata.
+Converted the remaining settings to use combo labels on init.
+Added init routines that use Game->Ghost[] to cache values.
+	This replaces using header-defined constants, in favour of
+	TILESET-based settings using three combos.
+	These values are populated the first time that a ghost script
+	runs by calling ghost3::init(). Every script should call this,
+	and if it has already run, it prompty returns.
+	This should be relatively fast, but not as fast as compile-time
+	constants; however the benefit of tileset-based implementation
+	AND the ability of individual scripts to CHANGE settings at
+	any time, is. IMO, worth the minor extra weight.
+	( ZoriaRPG, 4th February, 2021 )
 
 Alpha 2
+Example framing for weapon death events.
+Added GetInvisibleCombo()
+Remove GhostIsPit(), not needed. Refactor OnSidePlatform().
+	( ZoriaRPG, 4th February, 2021 )
 
+Removed GhostIsPit
+Changes to demo.
+	( arcerusplayer11, 4th February, 2021 )
+	
+Finish Demo1
+Demo 1 Stuff; Added new movement types to weapons.
+	( arcerusplayer11, 3rd February, 2021 )
+Added gitignore
+Added new features to ghosted weapons, added demo
+updated the version for the rest of the headers
+	( arcerusplayer11, 2nd February, 2021 )
 
 Alpha 1
+Namespace-ify ghost3_common, start optimizations 
+Now 'Game->Gravity[]' and 'npc->Immortal' should be respected
+	( Venrob, 31st January, 2021 )
+	
+Added alpha warning to readme.txt
+Prune YR 2.8.15 docs
+Move into namespace ghost3
+Prune 2.8 files.
+	( ZoriaRPG, 30th January, 2021 )
+Initial commit, version 3.0 (rewrite) for 2.55
+	( arcerusplayer11, ZoriaRPG[merged] 30th January, 2021 )
+	This removed useless code and was the initial phase of the rewrite.
+	e.g., AutoGhost and global active scripts are no longer used.
+	Everything now relies on noc scripts, and weapon scripts.
