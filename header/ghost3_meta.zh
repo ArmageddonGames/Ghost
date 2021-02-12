@@ -17,15 +17,15 @@ namespace ghost3
 		const int PATCHVERSION 	= 0;
 		
 		const statustype STATUS = ALPHA;
-		const int STATUSBUILD 	= 6;
+		const int STATUSBUILD 	= 8;
 		
 		const int YEAR 		= 2021;
 		const int MONTH 	= 2;
-		const int DAY 		= 7;
-		const int HOUR 		= 18;
-		const int MINUTE 	= 44;
+		const int DAY 		= 12;
+		const int HOUR 		= 8;
+		const int MINUTE 	= 22;
 		
-		const timezones TIMEZONE = GMT;
+		const timezones TIMEZONE = EST;
 		
 		
 		
