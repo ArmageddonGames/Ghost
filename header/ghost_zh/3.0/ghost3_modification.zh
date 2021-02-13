@@ -1,17 +1,18 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 8
+// Version 3.0.0 - Alpha 9
 
 namespace ghost3
 {
 	void Transform(npc ghost, int combo, int cset, int tileWidth, int tileHeight)
 	{
 		int diff;
+		int data = ghost->Misc[GH_INTERNAL];
 		ghost->Extend = 3;
 		
 		if(combo>=0)
 		{
-			ghost->Misc[GH_DATA] = combo;
-			ghost->Tile = Game->ComboTile(ghost->Misc[GH_DATA]);
+			data[GHI_DATA] = combo;
+			ghost->Tile = Game->ComboTile(combo);
 		}
 		
 		if(cset>=0)
@@ -554,7 +555,7 @@ namespace ghost3
 		if(KnockbackCounter>0)
 		{
 			KnockbackCounter=0;
-			ghost->Misc[GH_INTERNAL][GHI_IFLAGS]|=GHFI_KNOCKBACK_INTERRUPTED;
+			data[GHI_IFLAGS]|=GHFI_KNOCKBACK_INTERRUPTED;
 		}
 	*/
 	}

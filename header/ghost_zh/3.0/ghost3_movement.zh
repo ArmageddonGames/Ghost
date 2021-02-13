@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 8
+// Version 3.0.0 - Alpha 9
 
 namespace ghost3
 {
@@ -52,8 +52,8 @@ namespace ghost3
 			edgeDiff=ghost->HitXOffset;
 			edge=ghost->X+edgeDiff;
 			
-			startHT=Floor(edge/8);
-			endHT=Floor((edge+xStep)/8);
+			startHT=Round(edge/8);
+			endHT=Round((edge+xStep)/8);
 			
 			// If the edge ends up on the same half-tile line it's already on,
 			// there's no need to check walkability
@@ -69,13 +69,13 @@ namespace ghost3
 			edgeDiff=ghost->HitXOffset+ghost->HitWidth-1;
 			edge=ghost->X+edgeDiff;
 			
-			startHT=Floor(edge/8);
-			endHT=Floor((edge+xStep)/8);
+			startHT=Round(edge/8);
+			endHT=Round((edge+xStep)/8);
 			
 			if(ghost3::CanMove(ghost, DIR_RIGHT, xStep, imprecision))
 				edge+=xStep;
 			else
-				edge=(edge+6)-((edge+6)%8);
+				edge=((edge+7)>>3)<<3;
 			
 			ghost->X=edge-edgeDiff;
 		}
@@ -85,8 +85,8 @@ namespace ghost3
 			edgeDiff=ghost->HitYOffset;
 			edge=ghost->Y+edgeDiff;
 			
-			startHT=Floor(edge/8);
-			endHT=Floor((edge+yStep)/8);
+			startHT=Round(edge/8);
+			endHT=Round((edge+yStep)/8);
 			
 			// If the edge ends up on the same half-tile line it's already on,
 			// there's no need to check walkability
@@ -99,16 +99,16 @@ namespace ghost3
 		}
 		else if(yStep>0) // Down
 		{
-			edgeDiff=ghost->TileHeight+ghost->HitYOffset-1;
+			edgeDiff=ghost->HitHeight+ghost->HitYOffset-1;
 			edge=ghost->Y+edgeDiff;
 			
-			startHT=Floor(edge/8);
-			endHT=Floor((edge+yStep)/8);
+			startHT=Round(edge/8);
+			endHT=Round((edge+yStep)/8);
 			
 			if(ghost3::CanMove(ghost, DIR_DOWN, yStep, imprecision))
 				edge+=yStep;
 			else
-				edge=(edge+6)-((edge+6)%8);
+				edge=((edge+7)>>3)<<3;
 			
 			ghost->Y=edge-edgeDiff;
 		}
@@ -1117,10 +1117,48 @@ namespace ghost3
 			WizzrobeFlickerClear(this);
 		}
 	}
+	int OrbitNPC(npc this, npc n, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	{
+		return Orbit(this, CenterX(n), CenterY(n), preferdist, anglespeed, angle, ignoresolid);
+	}
+	int OrbitEWeapon(npc this, eweapon e, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	{
+		return Orbit(this, CenterX(e), CenterY(e), preferdist, anglespeed, angle, ignoresolid);
+	}
+	int OrbitLWeapon(npc this, lweapon l, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	{
+		return Orbit(this, CenterX(l), CenterY(l), preferdist, anglespeed, angle, ignoresolid);
+	}
+	int OrbitHero(npc this, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	{
+		return Orbit(this, Hero->X+8, Hero->Y+8, preferdist, anglespeed, angle, ignoresolid);
+	}
+	int Orbit(npc this, int centerx, int centery, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	{
+		angle += anglespeed;
+		if (ignoresolid)
+		{
+			this->X = centerx+VectorX(preferdist, angle);
+			this->Y = centery+VectorY(preferdist, angle);
+		}
+		else
+		{
+			int angle2 = Angle(CenterX(this), CenterY(this), centerx+VectorX(preferdist, angle), centery+VectorY(preferdist, angle));
+			int dist = Distance(CenterX(this), CenterY(this), centerx+VectorX(preferdist, angle), centery+VectorY(preferdist, angle));
+			MoveAtAngle(this, angle2, dist, 2);
+		}
+		return angle;
+	}
+	
 	void ForceMoveAtAngle(npc this, int angle, int step)
 	{
 		this->X += VectorX(step, angle);
 		this->Y += VectorY(step, angle);
+	}
+	void ForceMoveXY(npc this, int xstep, int ystep)
+	{
+		this->X += xstep;
+		this->Y += ystep;
 	}
 }
 

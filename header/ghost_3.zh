@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 Alpha 8
+// Version 3.0.0 Alpha 9
 // Use this for 2.55, and later versions of ZQuest
 
 // See ghost_zh_docs/index.html for documentation.
@@ -48,11 +48,17 @@ namespace ghost3
 		Flag 16
 	*/
 	
+	const int GH_INTERNAL = 31;
+	
 	// Registers of the data[] array, used for every script
 	enum DataRegisters
 	{
+		GHI_DATA,
+		GHI_VX,
+		GHI_VY,
+		GHI_AX,
+		GHI_AY,
 		GHI_FLAGS,	//GHF_, first 16
-		GHI_FLAGS2,	//GHF_ second 16
 		GHI_IFLAGS,	//GHFI_ internal enemy flags
 		GHI_PREVX,	//Positional updates
 		GHI_PREVY,
@@ -110,7 +116,6 @@ namespace ghost3
 
 	// npc->Misc[] index
 	// Set this so it doesn't conflict with other scripts. Legal values are 0-31.
-	const int GHI_NPC_DATA = 15; //! Nothing uses this now, and in any event it should be set by the combo.
 	
 	enum InitTypes
 	{

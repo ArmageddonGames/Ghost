@@ -320,7 +320,6 @@ namespace ghost3
 			untyped data[DATA_SIZE]; //Always first
 			init(this, data); //Always second
 			SetFlag(this, GHF_SET_DIRECTION);
-			SetFlag(this, GHF_8WAY);
 			SetTileAnimation(this, GH_STA_4DIR, {39008, 39180, 39040, 39048, 0, 4});
 			SetTrail(this, 2, 16, 3);
 			eweapon e;
@@ -370,6 +369,80 @@ namespace ghost3
 				}
 				
 			}
+		}
+	}
+	
+	npc script G3_Patra
+	{
+		//using namespace ghost3;
+		const int DEFAULT_TILE = 0;
+		const int DEFAULT_FRAME = 0;
+		const int DEFAULT_ASPEED = 0;
+		const int DEFAULT_DIST = 0;
+		void run(int tile, int frames, int aspeed, int dirs, int anglespeed, int spawnid, int spawnnum, int spawndist) //int fuckmylife why the fuck am I doing this
+		{
+			untyped data[DATA_SIZE]; //Always first
+			init(this, data); //Always second
+			
+			tile = (tile > 0) ? tile : DEFAULT_TILE;
+			frames = (frames > 0) ? frames : DEFAULT_FRAME;
+			aspeed = (aspeed > 0) ? aspeed : DEFAULT_ASPEED;
+			
+			SetFlag(this, GHF_SET_DIRECTION);
+			if (dirs >= 2) SetFlag(this, GHF_8WAY);
+			if (dirs == 1) SetFlag(this, GHF_4WAY);
+			int arr[10];
+			arr[0] = tile;
+			for (int i = 1; i < 8; ++i)
+			{
+				arr[i] = arr[i-1]+(Max(1,this->TileWidth)*Max(1,frames));
+				if (this->TileHeight > 1 && ((arr[i]/20)<<0) > ((arr[i-1]/20)<<0))
+				{
+					arr[i] += 20*(((arr[i]/20)<<0) - ((arr[i-1]/20)<<0))*(this->TileHeight-1);
+				}
+			}
+			arr[8] = aspeed;
+			arr[9] = frames;
+			int dist;
+			int angle;
+			npc n = Screen->LoadNPCByUID(this->ParentUID);
+			if (n->isValid()) 
+			{
+				dist = Distance(CenterX(n), CenterY(n), CenterX(this), CenterY(this));
+				angle = Angle(CenterX(n), CenterY(n), CenterX(this), CenterY(this));
+			}
+			if (dirs <= 0) SetTileAnimation(this, GH_STA_1DIR, arr);
+			if (dirs == 1) SetTileAnimation(this, GH_STA_4DIR, arr);
+			if (dirs >= 2) SetTileAnimation(this, GH_STA_8DIR, arr);
+			eweapon e;
+			if (spawnid > 0 && spawnnum > 0)
+			{
+				int initangle = Rand(360);
+				int offset = 360 / spawnnum;
+				for (int i = 0; i < spawnnum; ++i)
+				{
+					npc spawn = Screen->CreateNPC(spawnid);
+					spawn->ParentUID = this->UID;
+					spawn->X = CenterX(this)-8+VectorX(spawndist, initangle+(offset*i));
+					spawn->Y = CenterY(this)-8+VectorY(spawndist, initangle+(offset*i));
+				}
+			}
+			
+			while(true)
+			{
+				if (n->isValid())
+				{
+					angle = OrbitNPC(this, Screen->LoadNPCByUID(this->ParentUID), dist, anglespeed, angle, false);
+				}
+				else
+				{
+					data[GHI_AX] = Sign(Hero->X-this->X)*(this->Homing/1000);
+					data[GHI_AY] = Sign(Hero->Y-this->Y)*(this->Homing/1000);
+					data[GHI_VX] = Clamp(data[GHI_VX], -(this->Step/100), (this->Step/100));
+					data[GHI_VY] = Clamp(data[GHI_VY], -(this->Step/100), (this->Step/100));
+				}
+				Ghost_Waitframe(this, GHD_NONE, true);
+			} 
 		}
 	}
 	

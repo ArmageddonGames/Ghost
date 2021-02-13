@@ -1,5 +1,5 @@
 // ghost.zh
-// Version 3.0.0 - Alpha 8
+// Version 3.0.0 - Alpha 9
 namespace ghost3
 {
 	const int EW_GHOSTED    = 39;
