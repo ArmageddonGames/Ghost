@@ -104,6 +104,9 @@ namespace ghost3
 		GHI_TRAIL_FREQ,
 		GHI_TRAIL_LIFESPAN,
 		GHI_TRAIL_FLAGS,
+		GHI_ORBIT_LASTX,
+		GHI_ORBIT_LASTY,
+		GHI_ORBIT_ANGLE,
 		D0, D1, D2, D3,	//Generic data registers
 		D4, D5, D6, D7,
 		FLICKERCLK,
@@ -194,6 +197,7 @@ namespace ghost3
 		if (sysinit())
 		{
 			ghost->Misc[GH_INTERNAL] = ptr;
+			ptr[GHI_ORBIT_ANGLE] = -720;
 		}
 		else
 		{

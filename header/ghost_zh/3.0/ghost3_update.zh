@@ -113,8 +113,8 @@ namespace ghost3
 		int data = ghost->Misc[GH_INTERNAL];
 		//These braces are a handy way to put something in a scope and remove it once the scope leaves. Very handy!
 		{
-			float xStep = ghost->X - ghost->Misc[GH_INTERNAL][GHI_PREVX];
-			float yStep = ghost->Y - ghost->Misc[GH_INTERNAL][GHI_PREVY];
+			float xStep = ghost->X - data[GHI_PREVX];
+			float yStep = ghost->Y - data[GHI_PREVY];
 			unless (xStep == 0) ghost3::SetInternal(ghost, GHI_DIAGVX, xStep);
 			unless (yStep == 0) ghost3::SetInternal(ghost, GHI_DIAGVY, yStep);
 		}

@@ -1117,37 +1117,71 @@ namespace ghost3
 			WizzrobeFlickerClear(this);
 		}
 	}
-	int OrbitNPC(npc this, npc n, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	void OrbitNPC2(npc this, npc n, int preferdist, int anglespeed, bool ignoresolid)
 	{
-		return Orbit(this, CenterX(n), CenterY(n), preferdist, anglespeed, angle, ignoresolid);
+		Orbit(this, CenterX(n), CenterY(n), preferdist, anglespeed, ignoresolid);
 	}
-	int OrbitEWeapon(npc this, eweapon e, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	void OrbitEWeapon2(npc this, eweapon e, int preferdist, int anglespeed, bool ignoresolid)
 	{
-		return Orbit(this, CenterX(e), CenterY(e), preferdist, anglespeed, angle, ignoresolid);
+		Orbit(this, CenterX(e), CenterY(e), preferdist, anglespeed, ignoresolid);
 	}
-	int OrbitLWeapon(npc this, lweapon l, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	void OrbitLWeapon2(npc this, lweapon l, int preferdist, int anglespeed, bool ignoresolid)
 	{
-		return Orbit(this, CenterX(l), CenterY(l), preferdist, anglespeed, angle, ignoresolid);
+		Orbit(this, CenterX(l), CenterY(l), preferdist, anglespeed, ignoresolid);
 	}
-	int OrbitHero(npc this, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	void OrbitHero2(npc this, int preferdist, int anglespeed, bool ignoresolid)
 	{
-		return Orbit(this, Hero->X+8, Hero->Y+8, preferdist, anglespeed, angle, ignoresolid);
+		Orbit(this, Hero->X+8, Hero->Y+8, preferdist, anglespeed, ignoresolid);
 	}
-	int Orbit(npc this, int centerx, int centery, int preferdist, int anglespeed, int angle, bool ignoresolid)
+	void Orbit2(npc this, int centerx, int centery, int preferdist, int anglespeed, bool ignoresolid)
 	{
-		angle += anglespeed;
+		int data =  this->Misc[GH_INTERNAL];
+		if (data[GHI_ORBIT_ANGLE] == -720) data[GHI_ORBIT_ANGLE] = Angle(centerx, centery, CenterX(this), CenterY(this));
+		data[GHI_ORBIT_ANGLE] += anglespeed;
 		if (ignoresolid)
 		{
-			this->X = centerx+VectorX(preferdist, angle);
-			this->Y = centery+VectorY(preferdist, angle);
+			this->X = centerx+VectorX(preferdist, data[GHI_ORBIT_ANGLE]);
+			this->Y = centery+VectorY(preferdist, data[GHI_ORBIT_ANGLE]);
 		}
 		else
 		{
-			int angle2 = Angle(CenterX(this), CenterY(this), centerx+VectorX(preferdist, angle), centery+VectorY(preferdist, angle));
-			int dist = Distance(CenterX(this), CenterY(this), centerx+VectorX(preferdist, angle), centery+VectorY(preferdist, angle));
+			int angle2 = Angle(CenterX(this), CenterY(this), centerx+VectorX(preferdist, data[GHI_ORBIT_ANGLE]), centery+VectorY(preferdist, data[GHI_ORBIT_ANGLE]));
+			int dist = Distance(CenterX(this), CenterY(this), centerx+VectorX(preferdist, data[GHI_ORBIT_ANGLE]), centery+VectorY(preferdist, data[GHI_ORBIT_ANGLE]));
 			MoveAtAngle(this, angle2, dist, 2);
 		}
-		return angle;
+	}
+	void OrbitNPC(npc this, npc n, int preferdist, int anglespeed, bool ignoresolid)
+	{
+		Orbit(this, CenterX(n), CenterY(n), preferdist, anglespeed, ignoresolid);
+	}
+	void OrbitEWeapon(npc this, eweapon e, int preferdist, int anglespeed, bool ignoresolid)
+	{
+		Orbit(this, CenterX(e), CenterY(e), preferdist, anglespeed, ignoresolid);
+	}
+	void OrbitLWeapon(npc this, lweapon l, int preferdist, int anglespeed, bool ignoresolid)
+	{
+		Orbit(this, CenterX(l), CenterY(l), preferdist, anglespeed, ignoresolid);
+	}
+	void OrbitHero(npc this, int preferdist, int anglespeed, bool ignoresolid)
+	{
+		Orbit(this, Hero->X+8, Hero->Y+8, preferdist, anglespeed, ignoresolid);
+	}
+	void Orbit(npc this, int centerx, int centery, int preferdist, int anglespeed, bool ignoresolid)
+	{
+		int data =  this->Misc[GH_INTERNAL];
+		unless (data[GHI_ORBIT_LASTX] == 0 && data[GHI_ORBIT_LASTY] == 0)
+		{
+			if (ignoresolid) ForceMoveXY(this, (centerx - data[GHI_ORBIT_LASTX]), (centery - data[GHI_ORBIT_LASTY]));
+			else MoveXY(this, (centerx - data[GHI_ORBIT_LASTX]), (centery - data[GHI_ORBIT_LASTY]), 2);
+		}
+		data[GHI_ORBIT_LASTX] = centerx;
+		data[GHI_ORBIT_LASTY] = centery;
+		int angle = Angle(centerx, centery, CenterX(this), CenterY(this));
+		angle += anglespeed;
+		int angle2 = Angle(CenterX(this), CenterY(this), centerx+VectorX(preferdist, angle), centery+VectorY(preferdist, angle));
+		int dist = Distance(CenterX(this), CenterY(this), centerx+VectorX(preferdist, angle), centery+VectorY(preferdist, angle));
+		if (ignoresolid) ForceMoveAtAngle(this, angle2, dist);
+		else MoveAtAngle(this, angle2, dist, 2);
 	}
 	
 	void ForceMoveAtAngle(npc this, int angle, int step)

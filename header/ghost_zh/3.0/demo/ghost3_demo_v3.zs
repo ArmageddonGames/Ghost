@@ -432,7 +432,7 @@ namespace ghost3
 			{
 				if (n->isValid())
 				{
-					angle = OrbitNPC(this, Screen->LoadNPCByUID(this->ParentUID), dist, anglespeed, angle, false);
+					OrbitNPC(this, Screen->LoadNPCByUID(this->ParentUID), dist, anglespeed, true);
 				}
 				else
 				{
