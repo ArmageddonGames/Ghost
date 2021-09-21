@@ -348,7 +348,6 @@ int __AutoGhostParseName(npc enemy, int output)
 				--i;
 			}
 		}
-		return 1;
 	}
     
 	// Expected a script name and didn't find it?
@@ -366,6 +365,7 @@ int __AutoGhostParseName(npc enemy, int output)
 			return 0;
 		}
 	}
+	return 1;
 }
 
 // Used to silently kill an enemy when it couldn't be set up.
